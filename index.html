@@ -147,6 +147,9 @@ body.det .wrap>*:not(#detail){display:none!important}
 .dtab{width:100%;border-collapse:collapse;font-size:13px}.dtab th{text-align:left;font-weight:500;color:var(--muted);font-size:12px;padding:4px 0}.dtab td{padding:6px 0;border-top:1px solid var(--line)}.dtab .r{text-align:right}
 .dchk{display:grid;grid-template-columns:20px 1fr;gap:4px 6px;font-size:13px}.dchk .ok{color:var(--good)}.dchk .no{color:var(--bad)}
 .dz{font-size:13px;color:var(--muted);margin-bottom:8px}
+.pct{font-size:34px;font-weight:600;line-height:1}.pct.ok{color:var(--good)}.pct.mirne{color:var(--warn,#854F0B)}.pct.mimo{color:var(--bad)}
+.dcmp{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}.dcmp td,.dcmp th{padding:4px 0;vertical-align:top}.dcmp th{font-size:11px;font-weight:400;color:var(--muted);text-align:right}.dcmp td.r{text-align:right}.dcmp td.p{color:var(--muted);padding:4px 8px}.dcmp .ok{color:var(--good)}.dcmp .mirne{color:#854F0B}.dcmp .mimo{color:var(--bad)}
+.pb{font-size:11px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -269,7 +272,7 @@ function head(){
 head();
 
 let sel=45, metric="hours", A=44, B=45;
-const METRICS={hours:{l:"Hodiny",f:w=>w.hours,fmt:v=>cz(v)+" h"},km:{l:"Kilometry",f:w=>w.km,fmt:v=>cz(v)+" km"},load:{l:"Zátěž",f:w=>w.load,fmt:v=>v==null?"–":Math.round(v)}};
+const METRICS={hours:{l:"Hodiny",f:w=>w.hours,fmt:v=>cz(v)+" h"},km:{l:"Kilometry",f:w=>w.km,fmt:v=>cz(v)+" km"},load:{l:"Zátěž",f:w=>w.load,fmt:v=>v==null?"–":Math.round(v)},up:{l:"Nastoupáno",f:w=>w.up,fmt:v=>v==null?"–":Math.round(v)+" m"}};
 const W=cw=>WEEKS.find(w=>w.cw===cw);
 
 function weekly(){
@@ -280,14 +283,15 @@ function weekly(){
   WEEKS.forEach((w,i)=>{const v=m.f(w),x=x0+i*(bw+gap),h=v==null?0:Math.max(2,v/mx*(H-20));
     const cls="bar"+(w.cw===sel?" sel":"")+(w.current?" cur":"");
     s+=`<rect class="${cls}" data-cw="${w.cw}" x="${x}" y="${H-h}" width="${bw}" height="${h}" rx="4"><title>CW${w.cw}</title></rect>`;
-    s+=`<text class="val" x="${x+bw/2}" y="${H-h-5}" text-anchor="middle">${v==null?"–":(metric==="load"?Math.round(v):cz(v))}</text>`;
+    s+=`<text class="val" x="${x+bw/2}" y="${H-h-5}" text-anchor="middle">${v==null?"–":((metric==="load"||metric==="up")?Math.round(v):cz(v))}</text>`;
     s+=`<text x="${x+bw/2}" y="${H+16}" text-anchor="middle" ${w.cw===sel?'style="fill:var(--accent);font-weight:600"':""}>CW${w.cw}</text>`;});
   $("weekly").innerHTML=s+"</svg>";
   $("weekly").querySelectorAll("rect").forEach(r=>r.addEventListener("click",()=>{sel=+r.dataset.cw;render()}));
 }
 function kpis(){const w=W(sel);
   $("kpis").innerHTML=[["Hodiny",cz(w.hours)+" h",w.current?"týden právě začal":w.from+" – týden"],["Kilometry",w.km==null?"–":cz(w.km)+" km",w.n!=null?w.n+" běhů":"detail běhů chybí"],
-   ["Zátěž",w.load==null?"–":Math.round(w.load),"jen z běhů"],["Průměrný tep",w.hr==null?"–":w.hr,w.longest?"nejdelší "+cz(w.longest)+" km":""]]
+   ["Nastoupáno",w.up==null?"–":w.up.toLocaleString("cs-CZ")+" m",w.up==null?"v tomto týdnu chybí data":"jen z běhů"],["Zátěž",w.load==null?"–":Math.round(w.load),"jen z běhů"],
+   ["Průměrný tep",w.hr==null?"–":w.hr,""],["Nejdelší běh",w.longest?cz(w.longest)+" km":"–",""]]
    .map(([l,v,s])=>`<div class="tile"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join("");}
 function daily(){const w=W(sel);$("dayTitle").textContent=`CW${sel}, kilometry po dnech`;
   if(!w.runs||!w.runs.length){$("daily").innerHTML=`<p class="note" style="margin:0">${w.current?"V tomto týdnu zatím nic.":"Pro tento týden mám jen součty, ne jednotlivé běhy."}</p>`;return;}
@@ -302,13 +306,13 @@ function daily(){const w=W(sel);$("dayTitle").textContent=`CW${sel}, kilometry p
   $("daily").innerHTML=s+`</svg><div class="stack">${Object.keys(KIND).filter(k=>tot[k]>0).map(k=>`<i style="width:${tot[k]/sum*100}%;background:var(--t-${k})"></i>`).join("")}</div><div class="legend" style="margin-top:0">${lg}</div>`;}
 function runs(){const w=W(sel);const r=w.runs;
   $("runs").innerHTML=!r||!r.length?`<p class="note">Žádné běhy k zobrazení.</p>`:r.map((x,i)=>`<div class="run ${x.kind}${x.det?" click":""}" ${x.det?`data-i="${i}" role="button" tabindex="0"`:""}><div class="d">${DOW[x.dow]} ${x.date}</div>
-   <div><div class="n">${esc(x.name)}<span class="tt ${x.kind}">${KIND[x.kind]}</span>${x.pas?'<span class="tag">pás</span>':""}</div><div class="m">${Math.floor(x.min/60)} h ${String(x.min%60).padStart(2,"0")} min · ${x.pace} /km · tep ${x.hr} · zátěž ${x.load}</div></div>
+   <div><div class="n">${esc(x.name)}<span class="tt ${x.kind}">${KIND[x.kind]}</span>${x.pas?'<span class="tag">pás</span>':""}</div><div class="m">${Math.floor(x.min/60)} h ${String(x.min%60).padStart(2,"0")} min · ${x.pace} /km · tep ${x.hr} · zátěž ${x.load}${x.up>0?" · ↑ "+x.up+" m":""}</div></div>
    <div class="r">${cz(x.km)} km</div></div>`).join("");}
 $("runs").addEventListener("click",e=>{const b=e.target.closest(".run.click");if(b){const x=W(sel).runs[+b.dataset.i];if(x)openDetail(x);}});
 $("runs").addEventListener("keydown",e=>{if(e.key==="Enter"){const b=e.target.closest(".run.click");if(b){const x=W(sel).runs[+b.dataset.i];if(x)openDetail(x);}}});
 function compare(){
   const a=W(A),b=W(B);
-  const rows=[["Hodiny",a.hours,b.hours,v=>cz(v)],["Kilometry",a.km,b.km,v=>cz(v)],["Běhů",a.n,b.n,v=>v],["Zátěž",a.load,b.load,v=>Math.round(v)],["Prům. tep",a.hr,b.hr,v=>v],["Nejdelší běh, km",a.longest,b.longest,v=>cz(v)]];
+  const rows=[["Hodiny",a.hours,b.hours,v=>cz(v)],["Kilometry",a.km,b.km,v=>cz(v)],["Nastoupáno, m",a.up,b.up,v=>Math.round(v)],["Běhů",a.n,b.n,v=>v],["Zátěž",a.load,b.load,v=>Math.round(v)],["Prům. tep",a.hr,b.hr,v=>v],["Nejdelší běh, km",a.longest,b.longest,v=>cz(v)]];
   $("cmp").innerHTML=`<tr><th></th><th>CW${A}</th><th>CW${B}</th><th>Změna</th></tr>`+rows.map(([l,x,y,f])=>{
     let d="–",c="";if(x!=null&&y!=null&&x>0){const p=(y/x-1)*100;d=(p>=0?"+":"−")+Math.abs(p).toFixed(0)+" %";c=p>=0?"up":"down";}
     return `<tr><td>${l}</td><td>${x==null?"–":f(x)}</td><td>${y==null?"–":f(y)}</td><td class="${c}">${d}</td></tr>`}).join("");
@@ -378,12 +382,12 @@ function regView(){
   el.innerHTML=h;}
 function plan(){
   const tIso=TODAY.getFullYear()+"-"+String(TODAY.getMonth()+1).padStart(2,"0")+"-"+String(TODAY.getDate()).padStart(2,"0");
-  $("plan").innerHTML=PLAN.map(([i,p,t,full,label,isToday,done,iso])=>{const lab={KEY:"KEY run",NICE:"NICE to have",VOLNO:"Volno"}[p],cls={KEY:"b-must",NICE:"b-nice",VOLNO:"b-volno"}[p];
+  $("plan").innerHTML=PLAN.map(([i,p,t,full,label,isToday,done,iso,pc])=>{const lab={KEY:"KEY run",NICE:"NICE to have",VOLNO:"Volno"}[p],cls={KEY:"b-must",NICE:"b-nice",VOLNO:"b-volno"}[p];
     const kind=p==="VOLNO"?"none":/^long/i.test(full)?"long":/kvalit/i.test(full)?"q":"easy";
     let sym,col="var(--accent)";
     if(p==="VOLNO")sym="·";else if(done){sym="✓";col="var(--good)"}else if(iso<tIso){sym=p==="KEY"?"✗":"–";col=p==="KEY"?"var(--bad)":"var(--muted)"}else if(isToday)sym="●";else sym=p==="KEY"?"◆":"◇";
     const more=full.length>t.length+2;
-    return `<details class="day ${kind}${isToday?" today":""}"><summary><div><div class="d">${DOW[i]} ${label}</div><div class="sym" style="color:${col}">${sym}</div></div>
+    return `<details class="day ${kind}${isToday?" today":""}"><summary><div><div class="d">${DOW[i]} ${label}</div><div class="sym" style="color:${col}">${sym}</div>${pc!=null?`<div class="pb">${pc} %</div>`:""}</div>
     <div style="min-width:0"><span class="badge ${cls}">${lab}</span>${kind!=="none"?`<span class="tt ${kind}">${KIND[kind]}</span>`:""}<div style="margin-top:4px">${t}</div>${more?'<div class="more">Zobrazit celý popis</div>':""}${runOn(iso)?`<span class="lnk" data-iso="${iso}">Detail běhu ›</span>`:""}</div></summary>
     ${more?`<div class="full">${full}</div>`:""}</details>`}).join("");}
 
@@ -455,7 +459,9 @@ function detHtml(x){
   <div class="grid4"><div class="tile"><div class="l">Vzdálenost</div><div class="v">${cz(x.km)} km</div><div class="s">${mm}</div></div>
   <div class="tile"><div class="l">Průměrný tep</div><div class="v">${x.hr}</div><div class="s">max ${d.max_hr}</div></div>
   <div class="tile"><div class="l">Tempo</div><div class="v">${x.pace} /km</div><div class="s">${ivp?"v intervalech "+fmtP(ivp):"průměr"}</div></div>
-  <div class="tile"><div class="l">Zátěž</div><div class="v">${x.load}</div><div class="s">${z3} min v Z3 a výš</div></div></div>
+  <div class="tile"><div class="l">Zátěž</div><div class="v">${x.load}</div><div class="s">jen z tohoto běhu</div></div>
+  <div class="tile"><div class="l">Nastoupáno</div><div class="v">${(x.up||d.up_m||0).toLocaleString("cs-CZ")} m</div><div class="s">${x.upz?"dopočteno ze "+(x.upz==="sklon pásu"?"sklonu pásu":"záznamu"):"z Intervals.icu"}</div></div>
+  <div class="tile"><div class="l">V Z3 a výš</div><div class="v">${z3} min</div><div class="s">tep nad 155</div></div></div>
   <div class="card"><h2>Průběh běhu</h2><div class="chips" id="dchips">${chips.map(([k,l],i)=>`<button class="chip" data-m="${k}" aria-pressed="${i===0}">${l}</button>`).join("")}</div>
   <div id="dchart"></div><div class="dtip" id="dtip"><span>Přejeď prstem nebo myší po grafu.</span></div>
   ${detMini(x,"pace","Tempo (min/km)","var(--t-q)")}${hasG?detMini(x,"grade","Sklon","var(--t-long)"):(hasA&&!x.pas?detMini(x,"alt","Převýšení (m)","var(--t-long)"):"")}</div>
@@ -464,7 +470,10 @@ function detHtml(x){
   if(iv.length){h+=`<div class="card"><h2>Intervaly v Z3 a výš</h2><table class="dtab"><tr><th>#</th><th class="r">Od</th><th class="r">Délka</th><th class="r">Ø tep</th><th class="r">Tempo</th>${hasG?'<th class="r">Sklon</th>':""}</tr>
   ${iv.map((v,k)=>`<tr><td>${k+1}</td><td class="r">${Math.round(v.od_min)}'</td><td class="r">${fmtD(v.delka_s)}</td><td class="r">${v.hr}</td><td class="r">${fmtP(v.pace)}</td>${hasG?`<td class="r">${v.grade==null?"–":Math.round(v.grade)+" %"}</td>`:""}</tr>`).join("")}</table>
   ${iv.length>1?`<div class="sub" style="margin-top:8px">Ø tep intervalů: ${iv[0].hr} → ${iv[iv.length-1].hr} (${iv[iv.length-1].hr-iv[0].hr>=0?"+":""}${iv[iv.length-1].hr-iv[0].hr}). Délky jsou časy v Z3 a výš, tep se do zóny rozbíhá postupně.</div>`:""}</div>`;}
-  if(d.zadani||(d.kontrola||[]).length){h+=`<div class="card"><h2>Podle plánu</h2>${d.zadani?`<div class="dz">Zadání: ${esc(d.zadani)}</div>`:""}
+  if(d.zadani||(d.kontrola||[]).length||d.srovnani){const sv=d.srovnani,pc=sv?sv.procent:null,pcl=pc==null?"":pc>=80?"ok":pc>=50?"mirne":"mimo";
+  h+=`<div class="card"><h2>Podle plánu</h2>${sv?`<div class="pct ${pcl}">${pc==null?"–":pc+" %"}</div><div class="sub">Splnění plánu trenéra</div>
+  <table class="dcmp"><tr><th></th><th></th><th>plán</th><th>skutečnost</th></tr>${sv.radky.map(x=>`<tr><td class="${x.stav||""}" style="width:18px">${{ok:"✓",mirne:"~",mimo:"✗"}[x.stav]||"·"}</td><td>${esc(x.nazev)}</td><td class="r p">${esc(x.plan)}</td><td class="r"><b>${esc(x.skut)}</b></td></tr>`).join("")}</table>
+  <div class="sub" style="margin-top:8px">Jak jsem plán pochopil: ${esc(sv.popis_planu)}. Za základ beru bloky od trenéra, ne čas k dispozici; lehce méně či více je v toleranci.</div>`:(d.zadani?`<div class="dz">Zadání: ${esc(d.zadani)}</div>`:"")}
   <div class="dchk">${(d.kontrola||[]).map(k=>`<span class="${k.ok?"ok":"no"}">${k.ok?"✓":"✗"}</span><span>${esc(k.txt)}</span>`).join("")}</div></div>`;}
   return h;}
 function bindDet(x){
@@ -487,13 +496,13 @@ async function load(){
     TODAY=iso2(d.dnes);RACE_D={LHUT:iso2(d.zavody.LHUT),KAT100:iso2(d.zavody.KAT100)};
     const KMAP={easy:"easy",kvalita:"q",long:"long"};
     WEEKS=d.tydny.map((w,ix)=>{const od=iso2(w.od);
-      const runs=(w.rucne&&FALLBACK[w.cw])?FALLBACK[w.cw]:w.runs.map(x=>{const dd=iso2(x.datum);return {dow:dowI(dd),date:dm(dd),iso:x.datum,name:x.name||"běh",pas:x.pas?1:0,km:x.km,min:x.min,hr:x.hr||0,pace:x.pace,load:x.load,kind:KMAP[x.druh]||"easy",det:x.detail||null,zones:x.zones||null}});
-      const o={cw:w.cw,from:dm(od),hours:w.hodin,km:w.km,fit:w.fit,runs:runs,current:ix===d.tydny.length-1};
+      const runs=(w.rucne&&FALLBACK[w.cw])?FALLBACK[w.cw]:w.runs.map(x=>{const dd=iso2(x.datum);return {dow:dowI(dd),date:dm(dd),iso:x.datum,name:x.name||"běh",pas:x.pas?1:0,km:x.km,min:x.min,hr:x.hr||0,pace:x.pace,load:x.load,kind:KMAP[x.druh]||"easy",det:x.detail||null,zones:x.zones||null,up:x.up||0,upz:x.up_odhad||null}});
+      const o={cw:w.cw,from:dm(od),hours:w.hodin,km:w.km,up:(w.up==null?null:w.up),fit:w.fit,runs:runs,current:ix===d.tydny.length-1};
       if(w.cw===43&&!(runs&&runs.length)){o.runs=null;} return o});
     NOW=d.fit_dnes||NOW;
     const mon=new Date(TODAY);mon.setDate(mon.getDate()-dowI(TODAY));
     const weekPlan=d.plan.filter(e=>{const x=iso2(e.datum);return x>=mon&&x<=new Date(mon.getTime()+6*864e5+36e5)});
-    PLAN=weekPlan.map(e=>{const x=iso2(e.datum),i=dowI(x);return [i,e.priorita,shortT(e.trening),e.trening,dm(x),e.datum===d.dnes,e.priorita==="VOLNO"?null:(d.splneno[e.datum]||false),e.datum]});
+    PLAN=weekPlan.map(e=>{const x=iso2(e.datum),i=dowI(x);return [i,e.priorita,shortT(e.trening),e.trening,dm(x),e.datum===d.dnes,e.priorita==="VOLNO"?null:(d.splneno[e.datum]||false),e.datum,e.procent]});
     TODAY_IDX=dowI(TODAY);
     enrichA();enrichB();
     const done=WEEKS.filter(w=>!w.current);const lastDone=(done[done.length-1]||WEEKS[WEEKS.length-1]).cw;const curW=WEEKS.find(w=>w.current);
