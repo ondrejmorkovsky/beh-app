@@ -108,7 +108,12 @@ table.cmp td{padding:8px 4px;border-top:1px solid var(--line);text-align:right;f
 .ravg{position:absolute;top:-3px;width:2px;height:16px;background:var(--ink)}
 .rdot{position:absolute;top:-3px;width:16px;height:16px;border-radius:8px;background:var(--accent);border:2px solid var(--bg);box-sizing:border-box;transform:translateX(-8px)}
 .rlab{position:relative;height:14px;font-size:11px;color:var(--muted)}.rlab span{position:absolute;transform:translateX(-50%);white-space:nowrap}
-.rsp{display:flex;gap:3px;align-items:flex-end;height:26px;margin-top:8px}.rsp i{flex:1;background:var(--accent-2);border-radius:2px 2px 0 0}.rsp i.t{background:var(--accent)}
+.rm .nm{font-size:14px;font-weight:600}.rm .rv{text-align:right}
+.rtag{position:relative;height:16px;margin-top:10px;font-size:11px;font-weight:600}.rtag span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.rends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px;text-align:center}.rends small{display:block;font-size:10px}.rends span:first-child{text-align:left}.rends span:last-child{text-align:right}
+.rcap{font-size:11px;color:var(--muted);margin-top:12px}
+.rsp{display:flex;gap:3px;align-items:flex-end;margin-top:4px}.rsp .rb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0}.rsp .rb b{font-size:9px;font-weight:400;color:var(--muted);line-height:11px}.rsp .rb b.t{font-weight:700;color:var(--ink)}.rsp .rb i{display:block;flex:none;width:100%;background:var(--accent-2);border-radius:2px 2px 0 0}.rsp .rb i.t{background:var(--accent)}
+.rd{display:grid;grid-template-columns:64px 1fr;gap:2px 8px;margin:10px 0 0;font-size:13px}.rd dt{color:var(--muted);font-size:12px}.rd dd{margin:0}
 .rex{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
 .gauges{display:flex;flex-direction:column;gap:14px}
 .g{border:1px solid var(--line);border-radius:10px;padding:12px}
@@ -336,21 +341,21 @@ PLAN.forEach(e=>{e[4]=PLAN_DEFAULT_LABEL(e[0]);e[5]=e[0]===TODAY_IDX;e[6]=null;e
 let REG={"hrv": {"label": "HRV", "unit": "ms", "hodnota": 39, "prumer": 35.9, "od": 30.4, "do": 41.5, "min": 24, "max": 45, "rada": [45, 32, 34, 24, 35, 41, 34, 30, 38, 39, 43, 35, 41, 39], "lepsi_vyssi": true, "stav": "v normě", "barva": "good", "dnu": 15}, "klidovy_tep": {"label": "Klidový tep", "unit": "tep/min", "hodnota": 57, "prumer": 55.4, "od": 53.2, "do": 57.6, "min": 51, "max": 59, "rada": [53, 55, 55, 58, 56, 55, 59, 57, 53, 53, 51, 58, 56, 57], "lepsi_vyssi": false, "stav": "v normě", "barva": "good", "dnu": 15}, "spanek": {"label": "Spánek", "unit": "h", "hodnota": 6.0, "prumer": 6.6, "od": 5.43, "do": 7.77, "min": 3.85, "max": 8.3, "rada": [5.8, 6.9, 7.7, 3.85, 5.98, 7.13, 7.25, 5.5, 8.3, 5.9, 6.23, 7.9, 7.98, 6.0], "lepsi_vyssi": true, "stav": "v normě", "barva": "good", "dnu": 14}, "skore_spanku": {"label": "Skóre", "unit": "", "hodnota": 73, "prumer": 64.0, "od": 52.0, "do": 77.0, "min": 40, "max": 78, "rada": [45, 76, 73, 50, 40, 75, 76, 58, 49, 73, 71, 65, 78, 73], "lepsi_vyssi": true, "stav": "v normě", "barva": "good", "dnu": 14}};
 const RGEX={hrv:"Vyšší HRV je lepší, výrazný pokles pod běžné rozmezí značí únavu.",klidovy_tep:"Nižší je lepší, několik dní nad běžným rozmezím značí únavu nebo nemoc.",spanek:"Při tréninku 6–9 h týdně cílit na aspoň 7 h."};
 function regView(){
-  const el=$("reg");const ks=["hrv","klidovy_tep","spanek"].filter(k=>REG&&REG[k]);
-  if(!ks.length){el.innerHTML='<p class="note">Wellness data z Garminu zatím v Intervals.icu nejsou.</p>';return;}
-  const warn=ks.filter(k=>REG[k].barva==="warn").map(k=>REG[k].label.toLowerCase());
+  const el=$("reg");const ks=["hrv","klidovy_tep","spanek"].filter(k=>REG&&REG[k]&&REG[k].rozmezi_txt);
+  if(!ks.length){el.innerHTML='<p class="note">Regenerace: data z Garminu se načtou po dalším spuštění reportu.</p>';return;}
+  const warn=ks.filter(k=>REG[k].barva==="warn").map(k=>REG[k].label.split(" (")[0].toLowerCase());
   let h=`<div class="rgs ${warn.length?"warn":"good"}"><b>${warn.length?"Pozor: "+warn.join(", ")+" mimo tvé běžné rozmezí.":"V normě. HRV, klidový tep i spánek jsou v tvém běžném rozmezí."}</b></div>`;
   const f=x=>String(x).replace(".",",");
   ks.forEach(k=>{const m=REG[k],sl=k==="spanek";
-    const lo0=Math.min(m.min,m.od,m.hodnota),hi0=Math.max(m.max,m.do,m.hodnota),pad=(hi0-lo0)*.08,lo=lo0-pad,hi=hi0+pad,P=x=>((x-lo)/(hi-lo)*100).toFixed(1);
-    const val=sl?Math.floor(m.hodnota)+" h "+Math.round((m.hodnota%1)*60)+" min":Math.round(m.hodnota);
-    const mn=Math.min(...m.rada),mx=Math.max(...m.rada),sc=REG.skore_spanku;
-    const extra=sl&&sc?` Skóre spánku ${Math.round(sc.hodnota)} při průměru ${Math.round(sc.prumer)}.`:"";
-    h+=`<div class="rm"><div class="h"><span class="n">${m.label}</span><span><span class="v">${val}</span> <span class="u">${sl?"":m.unit}</span><span class="s ${m.barva}">${m.stav}</span></span></div>
-    <div class="rbar"><div class="rband" style="left:${P(m.od)}%;width:${P(m.do)-P(m.od)}%"></div><div class="ravg" style="left:${P(m.prumer)}%"></div><div class="rdot" style="left:${P(m.hodnota)}%"></div></div>
-    <div class="rlab"><span style="left:${P(m.od)}%">${f(m.od)}</span><span style="left:${P(m.prumer)}%;font-weight:600;color:var(--ink)">Ø ${f(m.prumer)}</span><span style="left:${P(m.do)}%">${f(m.do)}</span></div>
-    <div class="rsp">${m.rada.map((x,i)=>`<i class="${i===m.rada.length-1?"t":""}" style="height:${4+(x-mn)/((mx-mn)||1)*22}px"></i>`).join("")}</div>
-    <div class="rex">Běžné rozmezí za ${m.dnu} dní: ${f(m.od)}–${f(m.do)}${sl?" h":" "+m.unit}, průměr ${f(m.prumer)}.${extra} ${RGEX[k]}</div></div>`;});
+    const lo0=Math.min(m.min,m.od,m.hodnota),hi0=Math.max(m.max,m.do,m.hodnota),pad=(hi0-lo0)*.08,lo=lo0-pad,hi=hi0+pad,P=x=>Math.min(Math.max((x-lo)/(hi-lo)*100,0),100).toFixed(1);
+    const mn=Math.min(...m.rada),mx=Math.max(...m.rada);
+    h+=`<div class="rm"><div class="h"><span class="nm">${m.label}</span><span class="rv"><span class="v">${m.hodnota_txt}</span> <span class="u">${sl?"":m.unit}</span><br><span class="s ${m.barva}">${m.stav_txt}</span></span></div>
+    <div class="rtag"><span style="left:${Math.min(Math.max(P(m.hodnota),8),92)}%">${m.znacka} ▼</span></div>
+    <div class="rbar"><div class="rband" style="left:${P(m.od)}%;width:${P(m.do)-P(m.od)}%"></div><div class="ravg" style="left:${P(m.prumer)}%"></div></div>
+    <div class="rends"><span>${f(m.od)}<small>spodní</small></span><span>Ø ${f(m.prumer)}<small>průměr</small></span><span>${f(m.do)}<small>horní</small></span></div>
+    <div class="rcap">Posledních 14 dní (vpravo dnes)</div>
+    <div class="rsp">${m.rada.map((x,i)=>`<div class="rb"><b class="${i===m.rada.length-1?"t":""}">${m.rada_txt[i]}</b><i class="${i===m.rada.length-1?"t":""}" style="height:${4+(x-mn)/((mx-mn)||1)*30}px"></i></div>`).join("")}</div>
+    <dl class="rd"><dt>Rozmezí</dt><dd>${m.rozmezi_txt}</dd><dt>Jak číst</dt><dd>${m.jak}</dd></dl></div>`;});
   el.innerHTML=h;}
 function plan(){
   const tIso=TODAY.getFullYear()+"-"+String(TODAY.getMonth()+1).padStart(2,"0")+"-"+String(TODAY.getDate()).padStart(2,"0");
