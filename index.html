@@ -131,6 +131,22 @@ table.cmp td{padding:8px 4px;border-top:1px solid var(--line);text-align:right;f
 .rules{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.5}
 .foot{font-size:11px;color:var(--muted);text-align:center}
 @media (prefers-reduced-motion:no-preference){.bar{transition:fill .15s}}
+
+:root{--zc1:#9a9d99;--zc2:#1D9E75;--zc3:#EF9F27;--zc4:#E8743B;--zc5:#E24B4A}
+#detail{display:none;flex-direction:column;gap:16px}
+body.det #detail{display:flex}
+body.det .wrap>*:not(#detail){display:none!important}
+.back{appearance:none;background:none;border:0;color:var(--accent);font:500 14px var(--f-body);padding:0;text-align:left;cursor:pointer}
+.run.click{cursor:pointer}.run.click .r::after{content:" ›";color:var(--muted);font-weight:400}
+.lnk{display:inline-block;margin-top:6px;color:var(--accent);font-size:13px;font-weight:500;cursor:pointer}
+.dch{touch-action:pan-y;cursor:crosshair}
+.dtip{background:var(--surface);border-radius:8px;padding:6px 10px;font-size:12px;margin-top:6px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.dmini{margin-top:10px}.dmini .ml{font-size:12px;color:var(--muted)}
+.dzb{display:flex;height:10px;border-radius:5px;overflow:hidden}
+.dzl{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}.dzl i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.dtab{width:100%;border-collapse:collapse;font-size:13px}.dtab th{text-align:left;font-weight:500;color:var(--muted);font-size:12px;padding:4px 0}.dtab td{padding:6px 0;border-top:1px solid var(--line)}.dtab .r{text-align:right}
+.dchk{display:grid;grid-template-columns:20px 1fr;gap:4px 6px;font-size:13px}.dchk .ok{color:var(--good)}.dchk .no{color:var(--bad)}
+.dz{font-size:13px;color:var(--muted);margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -141,6 +157,7 @@ table.cmp td{padding:8px 4px;border-top:1px solid var(--line);text-align:right;f
     <h1>Běžecký přehled</h1>
     <div class="phase">Aerobní základ</div>
   </header>
+  <div id="detail"></div>
   <div class="count" id="count"></div>
 
   <div class="tabs" role="tablist" id="tabs">
@@ -242,6 +259,7 @@ let PLAN=[[0, "NICE", "Volno nebo 30–40' velmi lehce (do 140).", "Volno nebo 3
 let TODAY_IDX=0; let TODAY=new Date(2026,10,9);
 const cz=(x,d=1)=>x==null?"–":x.toFixed(d).replace(".",",");
 const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const DOWF=["pondělí","úterý","středa","čtvrtek","pátek","sobota","neděle"];
 let RACE_D={LHUT:new Date(2027,4,22),KAT100:new Date(2027,7,5)};
 function head(){
@@ -283,10 +301,11 @@ function daily(){const w=W(sel);$("dayTitle").textContent=`CW${sel}, kilometry p
   const lg=Object.keys(KIND).map(k=>`<span><i style="background:var(--t-${k})"></i>${KIND[k]} ${cz(tot[k])} km (${Math.round(tot[k]/sum*100)} %)</span>`).join("");
   $("daily").innerHTML=s+`</svg><div class="stack">${Object.keys(KIND).filter(k=>tot[k]>0).map(k=>`<i style="width:${tot[k]/sum*100}%;background:var(--t-${k})"></i>`).join("")}</div><div class="legend" style="margin-top:0">${lg}</div>`;}
 function runs(){const w=W(sel);const r=w.runs;
-  $("runs").innerHTML=!r||!r.length?`<p class="note">Žádné běhy k zobrazení.</p>`:r.map(x=>`<div class="run ${x.kind}"><div class="d">${DOW[x.dow]} ${x.date}</div>
-   <div><div class="n">${x.name}<span class="tt ${x.kind}">${KIND[x.kind]}</span>${x.pas?'<span class="tag">pás</span>':""}</div><div class="m">${Math.floor(x.min/60)} h ${String(x.min%60).padStart(2,"0")} min · ${x.pace} /km · tep ${x.hr} · zátěž ${x.load}</div></div>
+  $("runs").innerHTML=!r||!r.length?`<p class="note">Žádné běhy k zobrazení.</p>`:r.map((x,i)=>`<div class="run ${x.kind}${x.det?" click":""}" ${x.det?`data-i="${i}" role="button" tabindex="0"`:""}><div class="d">${DOW[x.dow]} ${x.date}</div>
+   <div><div class="n">${esc(x.name)}<span class="tt ${x.kind}">${KIND[x.kind]}</span>${x.pas?'<span class="tag">pás</span>':""}</div><div class="m">${Math.floor(x.min/60)} h ${String(x.min%60).padStart(2,"0")} min · ${x.pace} /km · tep ${x.hr} · zátěž ${x.load}</div></div>
    <div class="r">${cz(x.km)} km</div></div>`).join("");}
-
+$("runs").addEventListener("click",e=>{const b=e.target.closest(".run.click");if(b){const x=W(sel).runs[+b.dataset.i];if(x)openDetail(x);}});
+$("runs").addEventListener("keydown",e=>{if(e.key==="Enter"){const b=e.target.closest(".run.click");if(b){const x=W(sel).runs[+b.dataset.i];if(x)openDetail(x);}}});
 function compare(){
   const a=W(A),b=W(B);
   const rows=[["Hodiny",a.hours,b.hours,v=>cz(v)],["Kilometry",a.km,b.km,v=>cz(v)],["Běhů",a.n,b.n,v=>v],["Zátěž",a.load,b.load,v=>Math.round(v)],["Prům. tep",a.hr,b.hr,v=>v],["Nejdelší běh, km",a.longest,b.longest,v=>cz(v)]];
@@ -365,9 +384,10 @@ function plan(){
     if(p==="VOLNO")sym="·";else if(done){sym="✓";col="var(--good)"}else if(iso<tIso){sym=p==="KEY"?"✗":"–";col=p==="KEY"?"var(--bad)":"var(--muted)"}else if(isToday)sym="●";else sym=p==="KEY"?"◆":"◇";
     const more=full.length>t.length+2;
     return `<details class="day ${kind}${isToday?" today":""}"><summary><div><div class="d">${DOW[i]} ${label}</div><div class="sym" style="color:${col}">${sym}</div></div>
-    <div style="min-width:0"><span class="badge ${cls}">${lab}</span>${kind!=="none"?`<span class="tt ${kind}">${KIND[kind]}</span>`:""}<div style="margin-top:4px">${t}</div>${more?'<div class="more">Zobrazit celý popis</div>':""}</div></summary>
+    <div style="min-width:0"><span class="badge ${cls}">${lab}</span>${kind!=="none"?`<span class="tt ${kind}">${KIND[kind]}</span>`:""}<div style="margin-top:4px">${t}</div>${more?'<div class="more">Zobrazit celý popis</div>':""}${runOn(iso)?`<span class="lnk" data-iso="${iso}">Detail běhu ›</span>`:""}</div></summary>
     ${more?`<div class="full">${full}</div>`:""}</details>`}).join("");}
 
+$("plan").addEventListener("click",e=>{const l=e.target.closest(".lnk");if(l){e.preventDefault();const x=runOn(l.dataset.iso);if(x)openDetail(x);}});
 function render(){
   document.querySelectorAll("#metric .chip").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.m===metric)));
   weekly();kpis();daily();runs();compare();}
@@ -386,13 +406,88 @@ fit();gauges();regView();plan();render();
 
 const shortT=(t,n=70)=>{t=t.split(/(?<=[.!?])\s/)[0];return t.length<=n?t:t.slice(0,n).replace(/\s\S*$/,"")+"…"};
 const iso2=d=>new Date(d+"T12:00:00"), dm=d=>d.getDate()+"."+(d.getMonth()+1)+".", dowI=d=>(d.getDay()+6)%7;
+
+const ZB=[140,155,165,175],ZC=["--zc1","--zc2","--zc3","--zc4","--zc5"],ZN=["Z1","Z2","Z3","Z4","Z5"],CAP=165;
+const fmtP=v=>{if(v==null)return "–";let m=Math.floor(v),s=Math.round((v-m)*60);if(s===60){m++;s=0}return m+":"+String(s).padStart(2,"0")};
+const fmtD=s=>Math.floor(s/60)+":"+String(Math.round(s%60)).padStart(2,"0");
+function runOn(iso){for(const w of WEEKS)for(const x of (w.runs||[]))if(x.iso===iso&&x.det)return x;return null;}
+let DET_Y=0;
+function openDetail(x){DET_Y=window.scrollY;$("detail").innerHTML=detHtml(x);document.body.classList.add("det");window.scrollTo(0,0);
+  try{history.pushState({d:1},"")}catch(e){}bindDet(x);}
+function closeDetail(){document.body.classList.remove("det");window.scrollTo(0,DET_Y);}
+window.addEventListener("popstate",()=>{if(document.body.classList.contains("det"))closeDetail();});
+function detSeries(x,mode){const d=x.det;return {hr:d.hr,pace:d.pace,grade:d.grade,alt:d.alt}[mode];}
+function detChart(x,mode){
+  const d=x.det,ser=detSeries(x,mode),n=d.hr.length,dur=(n-1)*d.krok/60;
+  const W=360,H=190,L=44,R=8,T=10,B=22;
+  const vv=ser.filter(v=>v!=null);let lo=Math.min(...vv),hi=Math.max(...vv);
+  if(mode==="hr"){lo=Math.floor((Math.min(lo,130)-5)/5)*5;hi=Math.ceil((Math.max(hi,170)+5)/5)*5;}
+  else{const p=(hi-lo)*.1||1;lo-=p;hi+=p;}
+  const X=i=>L+(W-L-R)*i/(n-1),Y=v=>mode==="pace"?T+(H-T-B)*((v-lo)/(hi-lo)):T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  const fy=v=>mode==="pace"?fmtP(v):mode==="hr"?Math.round(v):mode==="grade"?Math.round(v)+" %":Math.round(v)+" m";
+  let s=`<svg class="dch" id="dsvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Průběh běhu">`;
+  if(mode==="hr"){const e=[-1e9,...ZB,1e9];for(let k=0;k<5;k++){const a=Math.max(e[k],lo),b=Math.min(e[k+1],hi);if(b>a){
+    s+=`<rect x="${L}" y="${Y(b).toFixed(1)}" width="${W-L-R}" height="${(Y(a)-Y(b)).toFixed(1)}" style="fill:var(${ZC[k]})" opacity=".22"/><text x="${L-4}" y="${((Y(a)+Y(b))/2+4).toFixed(1)}" text-anchor="end">${ZN[k]}</text>`}}}
+  else{s+=`<text x="${L-4}" y="${T+8}" text-anchor="end">${fy(mode==="pace"?lo:hi)}</text><text x="${L-4}" y="${H-B}" text-anchor="end">${fy(mode==="pace"?hi:lo)}</text>`;}
+  (d.intervaly||[]).forEach((iv,k)=>{const a=X(iv.od_min*60/d.krok),b=X((iv.od_min*60+iv.delka_s)/d.krok);
+    s+=`<rect x="${a.toFixed(1)}" y="${T}" width="${(b-a).toFixed(1)}" height="${H-T-B}" fill="var(--accent)" opacity=".10"/><text class="val" x="${((a+b)/2).toFixed(1)}" y="${T+11}" text-anchor="middle" style="font-weight:600">${k+1}</text>`;});
+  if(mode==="hr"&&CAP>lo&&CAP<hi)s+=`<line x1="${L}" x2="${W-R}" y1="${Y(CAP).toFixed(1)}" y2="${Y(CAP).toFixed(1)}" stroke="var(--bad)" stroke-dasharray="4 3"/><text x="${W-R}" y="${(Y(CAP)-3).toFixed(1)}" text-anchor="end" style="fill:var(--bad)">strop ${CAP}</text>`;
+  let path="",pen=false;ser.forEach((v,i)=>{if(v==null){pen=false;return}path+=(pen?"L":"M")+X(i).toFixed(1)+","+Y(v).toFixed(1);pen=true;});
+  s+=`<path d="${path}" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linejoin="round"/>`;
+  const st=dur>150?30:dur>75?20:10;for(let m=0;m<=dur;m+=st)s+=`<text x="${X(m*60/d.krok).toFixed(1)}" y="${H-6}" text-anchor="middle">${m}'</text>`;
+  s+=`<g id="dcur" hidden><line id="dcl" y1="${T}" y2="${H-B}" stroke="var(--muted)"/><circle id="dcc" r="4" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/></g></svg>`;
+  return {svg:s,X:X,Y:Y,L:L,R:R,W:W,n:n};
+}
+function detMini(x,mode,label,col){const d=x.det,ser=detSeries(x,mode);if(!ser)return "";const n=ser.length,w=360,h=56,l=44;
+  const vv=ser.filter(v=>v!=null);let lo=Math.min(...vv),hi=Math.max(...vv);if(hi-lo<1e-6){hi+=1;lo-=1}
+  const f=v=>mode==="pace"?fmtP(v):mode==="grade"?Math.round(v)+" %":Math.round(v)+" m";
+  let path="",pen=false;ser.forEach((v,i)=>{if(v==null){pen=false;return}const y=mode==="pace"?4+(h-8)*((v-lo)/(hi-lo)):4+(h-8)*(1-(v-lo)/(hi-lo));path+=(pen?"L":"M")+(l+(w-l-8)*i/(n-1)).toFixed(1)+","+y.toFixed(1);pen=true;});
+  return `<div class="dmini"><div class="ml">${label}</div><svg viewBox="0 0 ${w} ${h}"><path d="${path}" fill="none" stroke="${col}" stroke-width="1.6"/><text x="${l-4}" y="12" text-anchor="end">${f(mode==="pace"?lo:hi)}</text><text x="${l-4}" y="${h-4}" text-anchor="end">${f(mode==="pace"?hi:lo)}</text></svg></div>`;}
+function detHtml(x){
+  const d=x.det,z=(x.zones||[]).concat([0,0,0,0,0,0]),zs=[z[0],z[1],z[2],z[3],z.slice(4).reduce((a,b)=>a+b,0)],tot=zs.reduce((a,b)=>a+b,0)||1;
+  const z3=Math.round((zs[2]+zs[3]+zs[4])/60),iv=d.intervaly||[];
+  const ivp=iv.length?iv.reduce((a,b)=>a+b.pace*b.delka_s,0)/iv.reduce((a,b)=>a+b.delka_s,0):null;
+  const hasG=d.grade&&d.grade.some(v=>v!=null),hasA=d.alt&&d.alt.some(v=>v!=null);
+  const chips=[["hr","Tep"],d.pace?["pace","Tempo"]:null,hasG?["grade","Sklon"]:null,(!x.pas&&hasA)?["alt","Převýšení"]:null].filter(Boolean);
+  const mm=Math.floor(x.min/60)+" h "+String(x.min%60).padStart(2,"0")+" min";
+  let h=`<button class="back" id="dback">‹ Zpět</button>
+  <div><h1 style="font-size:22px">${esc(x.name)}</h1><div class="sub">${DOW[x.dow]} ${x.date} · ${x.pas?"pás":"venku"} <span class="tt ${x.kind}">${KIND[x.kind]}</span></div></div>
+  <div class="grid4"><div class="tile"><div class="l">Vzdálenost</div><div class="v">${cz(x.km)} km</div><div class="s">${mm}</div></div>
+  <div class="tile"><div class="l">Průměrný tep</div><div class="v">${x.hr}</div><div class="s">max ${d.max_hr}</div></div>
+  <div class="tile"><div class="l">Tempo</div><div class="v">${x.pace} /km</div><div class="s">${ivp?"v intervalech "+fmtP(ivp):"průměr"}</div></div>
+  <div class="tile"><div class="l">Zátěž</div><div class="v">${x.load}</div><div class="s">${z3} min v Z3 a výš</div></div></div>
+  <div class="card"><h2>Průběh běhu</h2><div class="chips" id="dchips">${chips.map(([k,l],i)=>`<button class="chip" data-m="${k}" aria-pressed="${i===0}">${l}</button>`).join("")}</div>
+  <div id="dchart"></div><div class="dtip" id="dtip"><span>Přejeď prstem nebo myší po grafu.</span></div>
+  ${detMini(x,"pace","Tempo (min/km)","var(--t-q)")}${hasG?detMini(x,"grade","Sklon","var(--t-long)"):(hasA&&!x.pas?detMini(x,"alt","Převýšení (m)","var(--t-long)"):"")}</div>
+  <div class="card"><h2>Čas v zónách</h2><div class="dzb">${zs.slice(0,5).map((v,i)=>`<div style="width:${v/tot*100}%;background:var(${ZC[i]})"></div>`).join("")}</div>
+  ${[["Z1 do 140",0],["Z2 141–155",1],["Z3 156–165",2],["Z4 166–175",3],["Z5 od 176",4]].filter(([,i])=>zs[i]>0).map(([l,i])=>`<div class="dzl"><span><i style="background:var(${ZC[i]})"></i>${l}</span><span>${Math.round(zs[i]/60)} min · ${Math.round(zs[i]/tot*100)} %</span></div>`).join("")}</div>`;
+  if(iv.length){h+=`<div class="card"><h2>Intervaly v Z3 a výš</h2><table class="dtab"><tr><th>#</th><th class="r">Od</th><th class="r">Délka</th><th class="r">Ø tep</th><th class="r">Tempo</th>${hasG?'<th class="r">Sklon</th>':""}</tr>
+  ${iv.map((v,k)=>`<tr><td>${k+1}</td><td class="r">${Math.round(v.od_min)}'</td><td class="r">${fmtD(v.delka_s)}</td><td class="r">${v.hr}</td><td class="r">${fmtP(v.pace)}</td>${hasG?`<td class="r">${v.grade==null?"–":Math.round(v.grade)+" %"}</td>`:""}</tr>`).join("")}</table>
+  ${iv.length>1?`<div class="sub" style="margin-top:8px">Ø tep intervalů: ${iv[0].hr} → ${iv[iv.length-1].hr} (${iv[iv.length-1].hr-iv[0].hr>=0?"+":""}${iv[iv.length-1].hr-iv[0].hr}). Délky jsou časy v Z3 a výš, tep se do zóny rozbíhá postupně.</div>`:""}</div>`;}
+  if(d.zadani||(d.kontrola||[]).length){h+=`<div class="card"><h2>Podle plánu</h2>${d.zadani?`<div class="dz">Zadání: ${esc(d.zadani)}</div>`:""}
+  <div class="dchk">${(d.kontrola||[]).map(k=>`<span class="${k.ok?"ok":"no"}">${k.ok?"✓":"✗"}</span><span>${esc(k.txt)}</span>`).join("")}</div></div>`;}
+  return h;}
+function bindDet(x){
+  $("dback").onclick=()=>{if(history.state&&history.state.d)history.back();else closeDetail();};
+  const draw=mode=>{const c=detChart(x,mode);$("dchart").innerHTML=c.svg;const svg=$("dsvg"),d=x.det;
+    const move=ev=>{const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)/r.width*c.W;let i=Math.round((px-c.L)/(c.W-c.L-c.R)*(c.n-1));i=Math.max(0,Math.min(c.n-1,i));
+      const v=detSeries(x,mode)[i];$("dcur").removeAttribute("hidden");$("dcl").setAttribute("x1",c.X(i));$("dcl").setAttribute("x2",c.X(i));
+      if(v!=null){$("dcc").setAttribute("cx",c.X(i));$("dcc").setAttribute("cy",c.Y(v));}
+      const sec=i*d.krok,k=(d.intervaly||[]).findIndex(iv=>sec>=iv.od_min*60&&sec<=iv.od_min*60+iv.delka_s);
+      const parts=[d.hr[i]!=null?"tep "+Math.round(d.hr[i]):null,d.pace&&d.pace[i]?fmtP(d.pace[i])+" /km":null,d.grade&&d.grade[i]!=null?"sklon "+Math.round(d.grade[i])+" %":(d.alt&&d.alt[i]!=null&&!x.pas?Math.round(d.alt[i])+" m n. m.":null)].filter(Boolean);
+      $("dtip").innerHTML=`<span>${fmtD(sec)}${k>=0?" · interval "+(k+1):""}</span><b>${parts.join(" · ")}</b>`;};
+    svg.addEventListener("pointermove",move);svg.addEventListener("pointerdown",move);};
+  draw("hr");
+  $("dchips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;document.querySelectorAll("#dchips .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b)));draw(b.dataset.m);});
+}
+
 async function load(){
   try{
     const r=await fetch("data.json",{cache:"no-store"});if(!r.ok)return;const d=await r.json();
     TODAY=iso2(d.dnes);RACE_D={LHUT:iso2(d.zavody.LHUT),KAT100:iso2(d.zavody.KAT100)};
     const KMAP={easy:"easy",kvalita:"q",long:"long"};
     WEEKS=d.tydny.map((w,ix)=>{const od=iso2(w.od);
-      const runs=(w.rucne&&FALLBACK[w.cw])?FALLBACK[w.cw]:w.runs.map(x=>{const dd=iso2(x.datum);return {dow:dowI(dd),date:dm(dd),name:x.name||"běh",pas:x.pas?1:0,km:x.km,min:x.min,hr:x.hr||0,pace:x.pace,load:x.load,kind:KMAP[x.druh]||"easy"}});
+      const runs=(w.rucne&&FALLBACK[w.cw])?FALLBACK[w.cw]:w.runs.map(x=>{const dd=iso2(x.datum);return {dow:dowI(dd),date:dm(dd),iso:x.datum,name:x.name||"běh",pas:x.pas?1:0,km:x.km,min:x.min,hr:x.hr||0,pace:x.pace,load:x.load,kind:KMAP[x.druh]||"easy",det:x.detail||null,zones:x.zones||null}});
       const o={cw:w.cw,from:dm(od),hours:w.hodin,km:w.km,fit:w.fit,runs:runs,current:ix===d.tydny.length-1};
       if(w.cw===43&&!(runs&&runs.length)){o.runs=null;} return o});
     NOW=d.fit_dnes||NOW;
@@ -401,8 +496,9 @@ async function load(){
     PLAN=weekPlan.map(e=>{const x=iso2(e.datum),i=dowI(x);return [i,e.priorita,shortT(e.trening),e.trening,dm(x),e.datum===d.dnes,e.priorita==="VOLNO"?null:(d.splneno[e.datum]||false),e.datum]});
     TODAY_IDX=dowI(TODAY);
     enrichA();enrichB();
-    const done=WEEKS.filter(w=>!w.current);sel=(done[done.length-1]||WEEKS[WEEKS.length-1]).cw;
-    A=(done[done.length-2]||done[0]||WEEKS[0]).cw;B=sel;
+    const done=WEEKS.filter(w=>!w.current);const lastDone=(done[done.length-1]||WEEKS[WEEKS.length-1]).cw;const curW=WEEKS.find(w=>w.current);
+    sel=(curW&&curW.runs&&curW.runs.length)?curW.cw:lastDone;
+    A=(done[done.length-2]||done[0]||WEEKS[0]).cw;B=lastDone;
     if(d.regenerace)REG=d.regenerace;
     head();fillSelects();fit();gauges();regView();plan();render();
     const g=new Date(d.vygenerovano);$("foot").textContent="Data z Intervals.icu, aktualizováno "+g.getDate()+". "+(g.getMonth()+1)+". v "+String(g.getHours()).padStart(2,"0")+":"+String(g.getMinutes()).padStart(2,"0")+".";
