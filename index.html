@@ -149,7 +149,7 @@ body.det .wrap>*:not(#detail){display:none!important}
 .dz{font-size:13px;color:var(--muted);margin-bottom:8px}
 .pct{font-size:34px;font-weight:600;line-height:1}.pct.ok{color:var(--good)}.pct.mirne{color:var(--warn,#854F0B)}.pct.mimo{color:var(--bad)}
 .dcmp{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}.dcmp td,.dcmp th{padding:4px 0;vertical-align:top}.dcmp th{font-size:11px;font-weight:400;color:var(--muted);text-align:right}.dcmp td.r{text-align:right}.dcmp td.p{color:var(--muted);padding:4px 8px}.dcmp .ok{color:var(--good)}.dcmp .mirne{color:#854F0B}.dcmp .mimo{color:var(--bad)}
-.pb{font-size:11px;color:var(--muted)}
+.pb{font-size:11px;color:var(--muted)}.dcmp .hd{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.dcmp .pl{font-size:11px;color:var(--muted);white-space:nowrap;padding:0 0 4px}
 </style>
 </head>
 <body>
@@ -472,7 +472,7 @@ function detHtml(x){
   ${iv.length>1?`<div class="sub" style="margin-top:8px">Ø tep intervalů: ${iv[0].hr} → ${iv[iv.length-1].hr} (${iv[iv.length-1].hr-iv[0].hr>=0?"+":""}${iv[iv.length-1].hr-iv[0].hr}). Délky jsou časy v Z3 a výš, tep se do zóny rozbíhá postupně.</div>`:""}</div>`;}
   if(d.zadani||(d.kontrola||[]).length||d.srovnani){const sv=d.srovnani,pc=sv?sv.procent:null,pcl=pc==null?"":pc>=80?"ok":pc>=50?"mirne":"mimo";
   h+=`<div class="card"><h2>Podle plánu</h2>${sv?`<div class="pct ${pcl}">${pc==null?"–":pc+" %"}</div><div class="sub">Splnění plánu trenéra</div>
-  <table class="dcmp"><tr><th></th><th></th><th>plán</th><th>skutečnost</th></tr>${sv.radky.map(x=>`<tr><td class="${x.stav||""}" style="width:18px">${{ok:"✓",mirne:"~",mimo:"✗"}[x.stav]||"·"}</td><td>${esc(x.nazev)}</td><td class="r p">${esc(x.plan)}</td><td class="r"><b>${esc(x.skut)}</b></td></tr>`).join("")}</table>
+  <table class="dcmp"><tr><td></td><td class="hd">Blok</td><td class="hd r">Skutečnost</td></tr>${sv.radky.map(x=>`<tr><td class="${x.stav||""}" style="width:20px;padding-top:6px">${{ok:"✓",mirne:"~",mimo:"✗"}[x.stav]||"·"}</td><td style="padding-top:6px;white-space:nowrap">${esc(x.nazev)}</td><td class="r" style="padding-top:6px;white-space:nowrap"><b>${esc(x.skut)}</b></td></tr><tr><td></td><td colspan="2" class="pl">plán: ${esc(x.plan)}</td></tr>`).join("")}</table>
   <div class="sub" style="margin-top:8px">Jak jsem plán pochopil: ${esc(sv.popis_planu)}. Za základ beru bloky od trenéra, ne čas k dispozici; lehce méně či více je v toleranci.</div>`:(d.zadani?`<div class="dz">Zadání: ${esc(d.zadani)}</div>`:"")}
   <div class="dchk">${(d.kontrola||[]).map(k=>`<span class="${k.ok?"ok":"no"}">${k.ok?"✓":"✗"}</span><span>${esc(k.txt)}</span>`).join("")}</div></div>`;}
   return h;}
