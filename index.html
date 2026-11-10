@@ -1,1 +1,409 @@
-test
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Běžecký přehled</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+[hidden]{display:none!important}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+/* Layout: kompaktní mobilní přehled, záložky Týden / Porovnání / Forma / Plán, sloupcové a čárové grafy v SVG */
+:root{
+  --bg:#fbfbf9; --surface:#f1f1ee; --ink:#1b1c1a; --muted:#6a6c68; --line:#e2e2dd;
+  --accent:#185FA5; --accent-soft:#dbe9f6; --accent-2:#85B7EB;
+  --good:#0F6E56; --good-soft:#dff3ec; --warn:#854F0B; --warn-soft:#faeeda; --bad:#A32D2D;
+  --c-ctl:#185FA5; --c-atl:#D85A30; --c-tsb:#1D9E75;
+  --t-easy:#85B7EB; --t-q:#D85A30; --t-long:#6B4FC4;
+  --f-display:"Space Grotesk","Inter",system-ui,sans-serif; --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14161a; --surface:#1e2126; --ink:#ecedea; --muted:#9a9d99; --line:#2c3037;
+  --accent:#6fb1ee; --accent-soft:#1f3347; --accent-2:#3d6a96;
+  --good:#52c9a3; --good-soft:#173329; --warn:#e6a85a; --warn-soft:#3a2d17; --bad:#ee7a7a;
+  --c-ctl:#6fb1ee; --c-atl:#f08a62; --c-tsb:#52c9a3;
+  --t-easy:#5b9bd5; --t-q:#f08a62; --t-long:#a58df0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14161a; --surface:#1e2126; --ink:#ecedea; --muted:#9a9d99; --line:#2c3037;
+  --accent:#6fb1ee; --accent-soft:#1f3347; --accent-2:#3d6a96;
+  --good:#52c9a3; --good-soft:#173329; --warn:#e6a85a; --warn-soft:#3a2d17; --bad:#ee7a7a;
+  --c-ctl:#6fb1ee; --c-atl:#f08a62; --c-tsb:#52c9a3;
+  --t-easy:#5b9bd5; --t-q:#f08a62; --t-long:#a58df0; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;
+  padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font:600 24px/1.2 var(--f-display);margin:0}
+.sub{color:var(--muted);font-size:13px}
+.phase{color:var(--accent);font-size:13px;font-weight:500}
+.count{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--surface);border-radius:10px;padding:10px 12px;min-width:0}
+.tile .l{font-size:12px;color:var(--muted)}
+.tile .v{font:600 20px/1.3 var(--f-display)}
+.tile .s{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{appearance:none;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font:500 14px var(--f-body);padding:8px 12px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
+.tabs button:focus-visible,.chip:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{display:flex;flex-direction:column;gap:16px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{appearance:none;border:1px solid var(--line);background:none;color:var(--ink);font:500 13px var(--f-body);border-radius:999px;padding:5px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+h2{font:500 12px var(--f-body);letter-spacing:.4px;color:var(--muted);margin:0 0 8px;text-transform:uppercase}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0}
+svg{display:block;width:100%;height:auto}
+svg text{font-family:var(--f-body);fill:var(--muted);font-size:11px}
+svg .val{fill:var(--ink)}
+.bar{fill:var(--accent-2);cursor:pointer}
+.bar.sel{fill:var(--accent)}
+.bar.cur{fill:none;stroke:var(--accent);stroke-dasharray:3 3}
+.runs{display:flex;flex-direction:column;gap:6px}
+.run{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.run .d{font-size:12px;color:var(--muted)}
+.run .n{font-weight:500;min-width:0;overflow-wrap:anywhere}
+.run .m{font-size:12px;color:var(--muted)}
+.run .r{text-align:right;font:600 15px var(--f-display);white-space:nowrap}
+.run{border-left-width:4px}
+.run.easy{border-left-color:var(--t-easy)}.run.q{border-left-color:var(--t-q)}.run.long{border-left-color:var(--t-long)}
+.day{border-left-width:4px}.day.easy{border-left-color:var(--t-easy)}.day.q{border-left-color:var(--t-q)}.day.long{border-left-color:var(--t-long)}.day.none{border-left-color:var(--line)}
+.tt{display:inline-block;font-size:11px;padding:1px 7px;border-radius:6px;margin-left:6px;color:#fff}
+.tt.easy{background:var(--t-easy);color:#10243a}.tt.q{background:var(--t-q);color:#fff}.tt.long{background:var(--t-long);color:#fff}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:4px 0 6px}
+.stack i{display:block;height:100%}
+.day{display:block}
+.day summary{display:grid;grid-template-columns:62px 1fr;gap:10px;cursor:pointer;list-style:none}
+.day summary::-webkit-details-marker{display:none}
+.day summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+.day .more{font-size:12px;color:var(--accent);margin-top:4px}
+.day[open] .more{display:none}
+.day .full{margin:8px 0 2px 72px;padding-top:8px;border-top:1px solid var(--line);font-size:14px;line-height:1.6}
+@media (max-width:420px){.day .full{margin-left:0}}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:6px;background:var(--surface);color:var(--muted);margin-left:6px}
+select{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:500 14px var(--f-body)}
+.sel2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+table.cmp{width:100%;border-collapse:collapse;font-size:14px}
+table.cmp th{font:500 12px var(--f-body);color:var(--muted);text-align:right;padding:6px 4px}
+table.cmp th:first-child,table.cmp td:first-child{text-align:left}
+table.cmp td{padding:8px 4px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+.up{color:var(--good)} .down{color:var(--warn)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap;margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+.day{display:block;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.day.today{border:2px solid var(--accent);padding:7px 9px}
+.day .d{font-size:12px;color:var(--muted)}
+.day .sym{font:600 18px var(--f-display)}
+.badge{font-size:11px;padding:2px 8px;border-radius:6px}
+.b-must{background:var(--good-soft);color:var(--good)} .b-nice{background:var(--warn-soft);color:var(--warn)} .b-volno{background:var(--surface);color:var(--muted)}
+.rgs{border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:6px}
+.rgs.good{background:var(--good-soft);color:var(--good)}.rgs.warn{background:var(--warn-soft);color:var(--warn)}
+.rm{padding:12px 0;border-bottom:1px solid var(--line)}
+.rm .h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.rm .n{font-size:13px;color:var(--muted)}.rm .v{font:600 20px var(--f-display)}.rm .u{font-size:13px;color:var(--muted)}.rm .s{font-size:12px;margin-left:4px}
+.rm .s.good{color:var(--good)}.rm .s.warn{color:var(--warn)}
+.rbar{position:relative;height:10px;background:var(--line);border-radius:5px;margin:14px 0 4px}
+.rband{position:absolute;top:0;height:10px;background:var(--good-soft);border:1px solid var(--good);box-sizing:border-box;border-radius:5px}
+.ravg{position:absolute;top:-3px;width:2px;height:16px;background:var(--ink)}
+.rdot{position:absolute;top:-3px;width:16px;height:16px;border-radius:8px;background:var(--accent);border:2px solid var(--bg);box-sizing:border-box;transform:translateX(-8px)}
+.rlab{position:relative;height:14px;font-size:11px;color:var(--muted)}.rlab span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.rsp{display:flex;gap:3px;align-items:flex-end;height:26px;margin-top:8px}.rsp i{flex:1;background:var(--accent-2);border-radius:2px 2px 0 0}.rsp i.t{background:var(--accent)}
+.rex{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
+.gauges{display:flex;flex-direction:column;gap:14px}
+.g{border:1px solid var(--line);border-radius:10px;padding:12px}
+.g .gh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.g .gn{font-size:13px;color:var(--muted)}
+.g .gv{font:600 18px var(--f-display)}
+.g .gs{font-size:12px;font-weight:500}
+.gbar{position:relative;display:flex;height:10px;border-radius:5px;overflow:hidden;margin:14px 0 4px}
+.gbar i{display:block;height:100%}
+.gm{position:relative;height:12px}
+.gm b{position:absolute;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid var(--ink);transform:translateX(-6px)}
+.gl{display:flex;font-size:11px;color:var(--muted)}
+.gl span{text-align:center;min-width:0}
+.g p{margin:8px 0 0;font-size:12px;color:var(--muted);line-height:1.5}
+.rules{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.5}
+.foot{font-size:11px;color:var(--muted);text-align:center}
+@media (prefers-reduced-motion:no-preference){.bar{transition:fill .15s}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="sub" id="today"></div>
+    <h1>Běžecký přehled</h1>
+    <div class="phase">Aerobní základ</div>
+  </header>
+  <div class="count" id="count"></div>
+
+  <div class="tabs" role="tablist" id="tabs">
+    <button role="tab" aria-selected="true" data-t="tyden">Týden</button>
+    <button role="tab" aria-selected="false" data-t="porovnani">Porovnání</button>
+    <button role="tab" aria-selected="false" data-t="forma">Forma</button>
+    <button role="tab" aria-selected="false" data-t="plan">Plán</button>
+  </div>
+
+  <section class="panel" id="p-tyden">
+    <div>
+      <h2>Týdenní objem, klepni na sloupec</h2>
+      <div class="chips" id="metric" style="margin-bottom:8px"></div>
+      <div class="card"><div id="weekly"></div></div>
+    </div>
+    <div class="grid4" id="kpis"></div>
+    <div>
+      <h2 id="dayTitle">Dny týdne, km</h2>
+      <div class="card"><div id="daily"></div></div>
+    </div>
+    <div>
+      <h2>Běhy</h2>
+      <div class="runs" id="runs"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-porovnani" hidden>
+    <div class="sel2">
+      <select id="wa" aria-label="Týden A"></select><span class="sub">proti</span><select id="wb" aria-label="Týden B"></select>
+    </div>
+    <div class="card"><table class="cmp" id="cmp"></table></div>
+    <div>
+      <h2>Kilometry po dnech</h2>
+      <div class="card"><div id="dcmp"></div>
+        <div class="legend"><span><i style="background:var(--accent)"></i><span id="la"></span></span><span><i style="background:var(--accent-2)"></i><span id="lb"></span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-forma" hidden>
+    <div class="chips" id="fitMode"><button class="chip" data-f="dnes" aria-pressed="true">Dnes</button><button class="chip" data-f="ne" aria-pressed="false">Konec minulého týdne</button></div>
+    <div class="card"><div id="fit"></div>
+      <div class="legend"><span><i style="background:var(--c-ctl)"></i>Kondice (CTL)</span><span><i style="background:var(--c-atl)"></i>Únava (ATL)</span><span><i style="background:var(--c-tsb)"></i>Forma (TSB)</span></div>
+    </div>
+    <div class="grid4" id="fitTiles"></div>
+    <div class="gauges" id="gauges"></div>
+    <div><h2>Regenerace</h2><div id="reg"></div></div>
+    <p class="note">Kondice je dlouhodobý základ za asi 6 týdnů. Únava je zátěž za asi 7 dní. Forma je kondice minus únava. Při budování základu je záporná forma v pořádku. Pod −30 už jde o přetížení. Před závodem míříme na +5 až +15.</p>
+  </section>
+
+  <section class="panel" id="p-plan" hidden>
+    <h2 style="margin:0">Plán od trenéra, CW46</h2>
+    <div class="legend" style="margin:0"><span><i style="background:var(--t-easy)"></i>Easy</span><span><i style="background:var(--t-q)"></i>Kvalita</span><span><i style="background:var(--t-long)"></i>Long</span></div>
+    <div class="runs" id="plan"></div>
+    <div class="card">
+      <h2>Pravidla týdne od Rolanda</h2>
+      <ol class="rules">
+        <li>Zelené běhy (<b>KEY runs</b>) jsou základ týdne, oranžové (<b>NICE to have</b>) jen když je čas. Pořadí si rozhoď podle sebe.</li>
+        <li>Kvalita na pásu a long nikdy dva dny po sobě, mezi nimi aspoň 1 lehký den nebo volno.</li>
+        <li>Co vypadne, nedohánět. Žádné dva tréninky v jeden den (síla se nepočítá).</li>
+        <li>Sílu dát k lehkému dni, ne před kvalitu.</li>
+        <li>Zóny: Z1 do 140 · Z2 141–155 (běžně 140–150) · Z3 156–165 · Z4 166–175 · Z5 176+.</li>
+      </ol>
+    </div>
+  </section>
+
+  <p class="note">Rozdělení běhů: Long = od 15 km nebo 2 h, Kvalita = aspoň 8 minut v Z3 a výš (tep nad 155), ostatní Easy. Typ běhu se počítá z minut v tepových zónách z Intervals.icu.</p>
+  <p class="foot" id="foot">Náhled s daty z Intervals.icu (CW44–45 z běhů, CW43 jen součty). V ostré verzi je bude denně doplňovat workflow.</p>
+</div>
+
+<script>
+const DOW=["Po","Út","St","Čt","Pá","So","Ne"];
+let WEEKS=[
+ {cw:43,from:"19.10.",hours:7.85,km:null,load:null,runs:null,fit:{ctl:37,atl:50}},
+ {cw:44,from:"26.10.",hours:6.33,km:53.4,fit:{ctl:40,atl:55},runs:[
+   {dow:0,date:"26.10.",name:"Zwift – Park To Peak",pas:1,km:5.29,min:34,hr:130,pace:"6:29",load:20},
+   {dow:1,date:"27.10.",name:"Vysoké Mýto, běh",km:12.06,min:72,hr:151,pace:"5:59",load:73},
+   {dow:3,date:"29.10.",q:1,name:"Ramsau, běh po stezce",km:12.49,min:95,hr:150,pace:"7:38",load:97},
+   {dow:5,date:"31.10.",name:"Ramsau, běh po stezce",km:15.54,min:119,hr:147,pace:"7:41",load:107},
+   {dow:6,date:"1.11.",name:"Zwift – Innsbruckring",pas:1,km:8.06,min:60,hr:141,pace:"7:27",load:47}]},
+ {cw:45,from:"2.11.",hours:6.97,km:57.7,fit:{ctl:42,atl:60},runs:[
+   {dow:2,date:"4.11.",name:"Vysoké Mýto, běh",km:10.1,min:65,hr:143,pace:"6:29",load:53},
+   {dow:3,date:"5.11.",name:"Zwift – Paris Pacer",pas:1,km:7.19,min:60,hr:143,pace:"8:21",load:49},
+   {dow:4,date:"6.11.",name:"Zwift – London Flat",pas:1,km:7.88,min:60,hr:146,pace:"7:38",load:55},
+   {dow:5,date:"7.11.",name:"Choceň, běh",km:7.39,min:46,hr:144,pace:"6:17",load:39},
+   {dow:6,date:"8.11.",name:"Řetová, běh po stezce",km:25.12,min:186,hr:145,pace:"7:26",load:160}]},
+ {cw:46,from:"9.11.",hours:0,km:0,fit:null,runs:[],current:true}
+];
+function enrichA(){WEEKS.forEach(w=>{ if(w.runs){ w.load=w.runs.reduce((a,r)=>a+r.load,0);
+  const m=w.runs.reduce((a,r)=>a+r.min,0); w.hr=m?Math.round(w.runs.reduce((a,r)=>a+r.hr*r.min,0)/m):null;
+  w.longest=w.runs.length?Math.max(...w.runs.map(r=>r.km)):null; w.n=w.runs.length;} else {w.n=null;w.hr=null;w.longest=null;} });}
+let NOW={ctl:40.7,atl:51.8}; // dnes, po dni bez běhu (data z reportu)
+let fitMode="dnes";
+const KIND={easy:"Easy",q:"Kvalita",long:"Long"};
+function enrichB(){WEEKS.forEach(w=>(w.runs||[]).forEach(r=>{r.kind=r.kind||(r.km>=15?"long":(r.q?"q":"easy"))}));}
+const FALLBACK={44:WEEKS[1].runs,45:WEEKS[2].runs};
+enrichA();enrichB();
+let PLAN=[[0, "NICE", "Volno nebo 30–40' velmi lehce (do 140).", "Volno nebo 30–40' velmi lehce (do 140). Jen na rozhýbání; 40' easy běhu, pokud to nečekaně vyjde."], [1, "KEY", "Pás 80' (kvalita): 15' rozběh na 1 %.", "Pás 80' (kvalita): 15' rozběh na 1 %. Pak 3×10' ve sklonu 6–8 % při tepu 156–165 (strop 165!!!, klidně i rychlá chůze, ta nám na ultra vůbec nevadí). Mezi úseky 3' volně na 1 %. Pak 10' Z2 na 4 % (tep 145–150) a 5' volně na konci."], [2, "KEY", "Venku 90' lehce při 140–150, na konci 6×20 s po rovince (svižně,…", "Venku 90' lehce při 140–150, na konci 6×20 s po rovince (svižně, uvolněně), mezi nimi minutka volně. Večer síla 15–20': 5–6' core, bulharský dřep, výpady a věci, které zvládneš doma v pohodě. Pokud bude čas = tip-top. Když nezvládneš, nevadí!"], [3, "KEY", "Pás 80' lehce do kopce: 10' na 1 %, pak 50' běhu na 4–6 % při tepu…", "Pás 80' lehce do kopce: 10' na 1 %, pak 50' běhu na 4–6 % při tepu 145–150. Posledních 15' s vestou rychlá chůze na 12–15 %, pořád do 150. Závěr: 5' volně, spodek Z2."], [4, "NICE", "Venku nebo pás 60–70' úplně v pohodě, do 150.", "Venku nebo pás 60–70' úplně v pohodě, do 150. Když jsi unavený, klidně jen 45'. K tomu síla a lehká plyometrie do 20'."], [5, "VOLNO", "Volno.", "Volno."], [6, "KEY", "Long Kralický Sněžník 2:30 až 3 h (18–25 km, cca 1000 m+).", "Long Kralický Sněžník 2:30 až 3 h (18–25 km, cca 1000 m+). Do kopce do tepu 155, nad tím vždy přejdi do chůze. Seběhy uvolněně. Jídlo a pití jako na závodě, 60–70 g/h od první půlhodiny. Pokud by trasa vycházela přes 3 h, zkrať ji tak, aby bylo opravdu dobře. Toto je objem, jde o to dostat ho do nohou. (text v tabulce dál pokračuje, na screenshotu končí)"]];
+let TODAY_IDX=0; let TODAY=new Date(2026,10,9);
+const cz=(x,d=1)=>x==null?"–":x.toFixed(d).replace(".",",");
+const $=id=>document.getElementById(id);
+const DOWF=["pondělí","úterý","středa","čtvrtek","pátek","sobota","neděle"];
+let RACE_D={LHUT:new Date(2027,4,22),KAT100:new Date(2027,7,5)};
+function head(){
+  const dd=n=>Math.round((RACE_D[n]-TODAY)/864e5);
+  $("today").textContent=`${DOWF[(TODAY.getDay()+6)%7]} ${TODAY.getDate()}. ${TODAY.getMonth()+1}. ${TODAY.getFullYear()}`;
+  $("count").innerHTML=[["LHUT 67 km","LHUT"],["KAT100","KAT100"]].map(([t,n])=>`<div class="tile"><div class="l">${t}</div><div class="v">${Math.floor(dd(n)/7)} týdnů</div><div class="s">${RACE_D[n].getDate()}. ${RACE_D[n].getMonth()+1}. ${RACE_D[n].getFullYear()}</div></div>`).join("");}
+head();
+
+let sel=45, metric="hours", A=44, B=45;
+const METRICS={hours:{l:"Hodiny",f:w=>w.hours,fmt:v=>cz(v)+" h"},km:{l:"Kilometry",f:w=>w.km,fmt:v=>cz(v)+" km"},load:{l:"Zátěž",f:w=>w.load,fmt:v=>v==null?"–":Math.round(v)}};
+const W=cw=>WEEKS.find(w=>w.cw===cw);
+
+function weekly(){
+  const m=METRICS[metric], vals=WEEKS.map(w=>m.f(w)), mx=Math.max(...vals.filter(v=>v!=null))*1.15||1;
+  const H=150,bw=56,gap=20,x0=14,W_=x0*2+WEEKS.length*bw+(WEEKS.length-1)*gap;
+  let s=`<svg viewBox="0 0 ${W_} ${H+30}" role="img" aria-label="Týdenní objem">`;
+  s+=`<line x1="0" x2="${W_}" y1="${H}" y2="${H}" stroke="var(--line)"/>`;
+  WEEKS.forEach((w,i)=>{const v=m.f(w),x=x0+i*(bw+gap),h=v==null?0:Math.max(2,v/mx*(H-20));
+    const cls="bar"+(w.cw===sel?" sel":"")+(w.current?" cur":"");
+    s+=`<rect class="${cls}" data-cw="${w.cw}" x="${x}" y="${H-h}" width="${bw}" height="${h}" rx="4"><title>CW${w.cw}</title></rect>`;
+    s+=`<text class="val" x="${x+bw/2}" y="${H-h-5}" text-anchor="middle">${v==null?"–":(metric==="load"?Math.round(v):cz(v))}</text>`;
+    s+=`<text x="${x+bw/2}" y="${H+16}" text-anchor="middle" ${w.cw===sel?'style="fill:var(--accent);font-weight:600"':""}>CW${w.cw}</text>`;});
+  $("weekly").innerHTML=s+"</svg>";
+  $("weekly").querySelectorAll("rect").forEach(r=>r.addEventListener("click",()=>{sel=+r.dataset.cw;render()}));
+}
+function kpis(){const w=W(sel);
+  $("kpis").innerHTML=[["Hodiny",cz(w.hours)+" h",w.current?"týden právě začal":w.from+" – týden"],["Kilometry",w.km==null?"–":cz(w.km)+" km",w.n!=null?w.n+" běhů":"detail běhů chybí"],
+   ["Zátěž",w.load==null?"–":Math.round(w.load),"jen z běhů"],["Průměrný tep",w.hr==null?"–":w.hr,w.longest?"nejdelší "+cz(w.longest)+" km":""]]
+   .map(([l,v,s])=>`<div class="tile"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join("");}
+function daily(){const w=W(sel);$("dayTitle").textContent=`CW${sel}, kilometry po dnech`;
+  if(!w.runs||!w.runs.length){$("daily").innerHTML=`<p class="note" style="margin:0">${w.current?"V tomto týdnu zatím nic.":"Pro tento týden mám jen součty, ne jednotlivé běhy."}</p>`;return;}
+  const per=[0,0,0,0,0,0,0],kd=["easy","easy","easy","easy","easy","easy","easy"],best=[0,0,0,0,0,0,0];w.runs.forEach(r=>{per[r.dow]+=r.km;if(r.km>best[r.dow]){best[r.dow]=r.km;kd[r.dow]=r.kind}});const mx=Math.max(...per,10)*1.15,H=110,bw=30,gap=12,x0=8,W_=x0*2+7*bw+6*gap;
+  let s=`<svg viewBox="0 0 ${W_} ${H+26}" role="img" aria-label="Kilometry po dnech"><line x1="0" x2="${W_}" y1="${H}" y2="${H}" stroke="var(--line)"/>`;
+  per.forEach((v,i)=>{const x=x0+i*(bw+gap),h=v?Math.max(2,v/mx*(H-16)):0;
+    s+=`<rect x="${x}" y="${H-h}" width="${bw}" height="${h}" rx="3" fill="var(--t-${kd[i]})"/>`;
+    if(v)s+=`<text class="val" x="${x+bw/2}" y="${H-h-4}" text-anchor="middle">${cz(v)}</text>`;
+    s+=`<text x="${x+bw/2}" y="${H+15}" text-anchor="middle">${DOW[i]}</text>`;});
+  const tot={easy:0,q:0,long:0};w.runs.forEach(r=>tot[r.kind]+=r.km);const sum=tot.easy+tot.q+tot.long;
+  const lg=Object.keys(KIND).map(k=>`<span><i style="background:var(--t-${k})"></i>${KIND[k]} ${cz(tot[k])} km (${Math.round(tot[k]/sum*100)} %)</span>`).join("");
+  $("daily").innerHTML=s+`</svg><div class="stack">${Object.keys(KIND).filter(k=>tot[k]>0).map(k=>`<i style="width:${tot[k]/sum*100}%;background:var(--t-${k})"></i>`).join("")}</div><div class="legend" style="margin-top:0">${lg}</div>`;}
+function runs(){const w=W(sel);const r=w.runs;
+  $("runs").innerHTML=!r||!r.length?`<p class="note">Žádné běhy k zobrazení.</p>`:r.map(x=>`<div class="run ${x.kind}"><div class="d">${DOW[x.dow]} ${x.date}</div>
+   <div><div class="n">${x.name}<span class="tt ${x.kind}">${KIND[x.kind]}</span>${x.pas?'<span class="tag">pás</span>':""}</div><div class="m">${Math.floor(x.min/60)} h ${String(x.min%60).padStart(2,"0")} min · ${x.pace} /km · tep ${x.hr} · zátěž ${x.load}</div></div>
+   <div class="r">${cz(x.km)} km</div></div>`).join("");}
+
+function compare(){
+  const a=W(A),b=W(B);
+  const rows=[["Hodiny",a.hours,b.hours,v=>cz(v)],["Kilometry",a.km,b.km,v=>cz(v)],["Běhů",a.n,b.n,v=>v],["Zátěž",a.load,b.load,v=>Math.round(v)],["Prům. tep",a.hr,b.hr,v=>v],["Nejdelší běh, km",a.longest,b.longest,v=>cz(v)]];
+  $("cmp").innerHTML=`<tr><th></th><th>CW${A}</th><th>CW${B}</th><th>Změna</th></tr>`+rows.map(([l,x,y,f])=>{
+    let d="–",c="";if(x!=null&&y!=null&&x>0){const p=(y/x-1)*100;d=(p>=0?"+":"−")+Math.abs(p).toFixed(0)+" %";c=p>=0?"up":"down";}
+    return `<tr><td>${l}</td><td>${x==null?"–":f(x)}</td><td>${y==null?"–":f(y)}</td><td class="${c}">${d}</td></tr>`}).join("");
+  $("la").textContent="CW"+A;$("lb").textContent="CW"+B;
+  const pd=w=>{const p=[0,0,0,0,0,0,0];(w.runs||[]).forEach(r=>p[r.dow]+=r.km);return p},pa=pd(a),pb=pd(b);
+  if(!a.runs||!b.runs){$("dcmp").innerHTML=`<p class="note" style="margin:0">Pro CW43 nejsou denní data.</p>`;return;}
+  const mx=Math.max(...pa,...pb,10)*1.12,H=120,bw=15,pair=4,gap=10,x0=8,W_=x0*2+7*(2*bw+pair)+6*gap;
+  let s=`<svg viewBox="0 0 ${W_} ${H+26}" role="img" aria-label="Porovnání kilometrů po dnech"><line x1="0" x2="${W_}" y1="${H}" y2="${H}" stroke="var(--line)"/>`;
+  for(let i=0;i<7;i++){const x=x0+i*(2*bw+pair+gap);
+    [[pa[i],"var(--accent)",0],[pb[i],"var(--accent-2)",bw+pair]].forEach(([v,col,off])=>{const h=v?Math.max(2,v/mx*(H-14)):0;
+      s+=`<rect x="${x+off}" y="${H-h}" width="${bw}" height="${h}" rx="3" fill="${col}"/>`;});
+    s+=`<text x="${x+bw+pair/2}" y="${H+15}" text-anchor="middle">${DOW[i]}</text>`;}
+  $("dcmp").innerHTML=s+"</svg>";}
+
+function fit(){
+  const pts=WEEKS.filter(w=>w.fit).map(w=>({cw:"CW"+w.cw,ctl:w.fit.ctl,atl:w.fit.atl,tsb:w.fit.ctl-w.fit.atl})).concat([{cw:"dnes",ctl:NOW.ctl,atl:NOW.atl,tsb:Math.round((NOW.ctl-NOW.atl)*10)/10}]);
+  const Wd=320,H=170,pl=30,pr=26,pt=12,pb=26,lo=-30,hi=70,X=i=>pl+i*(Wd-pl-pr)/(pts.length-1),Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);
+  let s=`<svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Kondice, únava a forma za poslední týdny">`;
+  [-30,0,30,60].forEach(t=>{s+=`<line x1="${pl}" x2="${Wd-pr}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--line)"/><text x="${pl-5}" y="${Y(t)+4}" text-anchor="end">${t}</text>`;});
+  [["ctl","var(--c-ctl)"],["atl","var(--c-atl)"],["tsb","var(--c-tsb)"]].forEach(([k,c])=>{
+    s+=`<polyline fill="none" stroke="${c}" stroke-width="2.5" stroke-linejoin="round" points="${pts.map((p,i)=>X(i)+","+Y(p[k])).join(" ")}"/>`;
+    pts.forEach((p,i)=>{s+=`<circle cx="${X(i)}" cy="${Y(p[k])}" r="3.5" fill="${c}"/>`;
+      if(i===pts.length-1)s+=`<text class="val" x="${X(i)}" y="${Y(p[k])+(k==="ctl"?18:-8)}" text-anchor="end">${String(p[k]).replace(".",",")}</text>`;});});
+  pts.forEach((p,i)=>s+=`<text x="${X(i)}" y="${H-8}" text-anchor="middle">${p.cw}</text>`);
+  $("fit").innerHTML=s+"</svg>";
+  const l=fitMode==="dnes"?pts[pts.length-1]:pts[pts.length-2],f0=pts[0],lab=l.tsb<-30?"přetížení":l.tsb<-10?"produktivní zátěž":l.tsb<=5?"neutrální":"svěží",r=(l.atl/l.ctl).toFixed(2).replace(".",",");
+  $("fitTiles").innerHTML=[["Kondice",String(l.ctl).replace(".",","),(l.ctl-f0.ctl>=0?"+":"−")+String(Math.round(Math.abs(l.ctl-f0.ctl)*10)/10).replace(".",",")+" od CW43"],["Únava",String(l.atl).replace(".",","),r+"× kondice"],["Forma",(l.tsb<0?"−":"+")+String(Math.round(Math.abs(l.tsb)*10)/10).replace(".",","),lab]].map(([a,b,c])=>`<div class="tile"><div class="l">${a}</div><div class="v">${b}</div><div class="s">${c}</div></div>`).join("");}
+
+function gauge(name,val,disp,status,col,lo,hi,bands,text){
+  let prev=lo,bars="",lab="";
+  bands.forEach(([ub,c,l])=>{const w=(ub-prev)/(hi-lo)*100;bars+=`<i style="width:${w}%;background:${c}"></i>`;lab+=`<span style="width:${w}%">${l}</span>`;prev=ub;});
+  const pos=Math.min(Math.max((val-lo)/(hi-lo)*100,1.5),98.5);
+  return `<div class="g"><div class="gh"><span class="gn">${name}</span><span><span class="gv">${disp}</span> <span class="gs" style="color:${col}">${status}</span></span></div>
+  <div class="gbar">${bars}</div><div class="gm"><b style="left:${pos}%"></b></div><div class="gl">${lab}</div><p>${text}</p></div>`;}
+function gauges(){
+  const f=WEEKS.filter(w=>w.fit),wk=f[f.length-1].fit,pw=f[f.length-2].fit,l=fitMode==="dnes"?NOW:wk,p=pw,ramp=wk.ctl-pw.ctl,ratio=l.atl/l.ctl,tsb=Math.round((l.ctl-l.atl)*10)/10;
+  const rs=ramp<0?["pokles","var(--warn)"]:ramp<=5?["zdravý růst","var(--good)"]:ramp<=8?["rychlý růst","var(--warn)"]:["riziko","var(--bad)"];
+  const as=ratio<0.8?["málo","var(--muted)"]:ratio<=1.3?["v pořádku","var(--good)"]:ratio<=1.5?["pozor","var(--warn)"]:["přetížení","var(--bad)"];
+  const ts=tsb<-30?["přetížení","var(--bad)"]:tsb<-10?["produktivní zátěž","var(--good)"]:tsb<=5?["neutrální","var(--muted)"]:["svěží","var(--accent)"];
+  $("gauges").innerHTML=
+   gauge("Kondice (CTL), změna za týden CW45",ramp,(ramp>=0?"+":"−")+Math.abs(ramp),rs[0],rs[1],-2,10,[[0,"var(--warn)","pokles"],[5,"var(--good)","zdravý růst"],[8,"var(--warn)","rychlý"],[10,"var(--bad)","riziko"]],
+     `Změna kondice za týden CW45: z ${p.ctl} na ${wk.ctl}. Měří se vždy na konci týdne. Růst do 5 bodů týdně je bezpečný, nad 8 už se zvyšuje riziko zranění.`)+
+   gauge("Únava (ATL) proti kondici",ratio,String(ratio.toFixed(2)).replace(".",",")+"×",as[0],as[1],0.5,1.8,[[0.8,"var(--muted)","málo"],[1.3,"var(--good)","v pořádku"],[1.5,"var(--warn)","pozor"],[1.8,"var(--bad)","přetížení"]],
+     `Únava ${l.atl} je ${String(ratio.toFixed(2)).replace(".",",")}× kondice (${l.ctl}), stav ${fitMode==="dnes"?"dnes":"na konci minulého týdne"}. Do 1,3× je zátěž zvládnutelná, nad 1,5× hrozí přetížení.`)+
+   gauge("Forma (TSB)",tsb,(tsb<0?"−":"+")+Math.abs(tsb),ts[0],ts[1],-40,25,[[-30,"var(--bad)","přetížení"],[-10,"var(--good)","produktivní"],[5,"var(--muted)","neutrální"],[25,"var(--accent)","svěží"]],
+     `Forma ${String(tsb).replace(".",",")} je při budování základu v pořádku. Před závodem míříme na +5 až +15, pod −30 je to přetížení.`);}
+const PLAN_DEFAULT_LABEL=i=>(9+i)+".11.";
+PLAN.forEach(e=>{e[4]=PLAN_DEFAULT_LABEL(e[0]);e[5]=e[0]===TODAY_IDX;e[6]=null;e[7]="2026-11-"+String(9+e[0]).padStart(2,"0")});
+let REG={"hrv": {"label": "HRV", "unit": "ms", "hodnota": 39, "prumer": 35.9, "od": 30.4, "do": 41.5, "min": 24, "max": 45, "rada": [45, 32, 34, 24, 35, 41, 34, 30, 38, 39, 43, 35, 41, 39], "lepsi_vyssi": true, "stav": "v normě", "barva": "good", "dnu": 15}, "klidovy_tep": {"label": "Klidový tep", "unit": "tep/min", "hodnota": 57, "prumer": 55.4, "od": 53.2, "do": 57.6, "min": 51, "max": 59, "rada": [53, 55, 55, 58, 56, 55, 59, 57, 53, 53, 51, 58, 56, 57], "lepsi_vyssi": false, "stav": "v normě", "barva": "good", "dnu": 15}, "spanek": {"label": "Spánek", "unit": "h", "hodnota": 6.0, "prumer": 6.6, "od": 5.43, "do": 7.77, "min": 3.85, "max": 8.3, "rada": [5.8, 6.9, 7.7, 3.85, 5.98, 7.13, 7.25, 5.5, 8.3, 5.9, 6.23, 7.9, 7.98, 6.0], "lepsi_vyssi": true, "stav": "v normě", "barva": "good", "dnu": 14}, "skore_spanku": {"label": "Skóre", "unit": "", "hodnota": 73, "prumer": 64.0, "od": 52.0, "do": 77.0, "min": 40, "max": 78, "rada": [45, 76, 73, 50, 40, 75, 76, 58, 49, 73, 71, 65, 78, 73], "lepsi_vyssi": true, "stav": "v normě", "barva": "good", "dnu": 14}};
+const RGEX={hrv:"Vyšší HRV je lepší, výrazný pokles pod běžné rozmezí značí únavu.",klidovy_tep:"Nižší je lepší, několik dní nad běžným rozmezím značí únavu nebo nemoc.",spanek:"Při tréninku 6–9 h týdně cílit na aspoň 7 h."};
+function regView(){
+  const el=$("reg");const ks=["hrv","klidovy_tep","spanek"].filter(k=>REG&&REG[k]);
+  if(!ks.length){el.innerHTML='<p class="note">Wellness data z Garminu zatím v Intervals.icu nejsou.</p>';return;}
+  const warn=ks.filter(k=>REG[k].barva==="warn").map(k=>REG[k].label.toLowerCase());
+  let h=`<div class="rgs ${warn.length?"warn":"good"}"><b>${warn.length?"Pozor: "+warn.join(", ")+" mimo tvé běžné rozmezí.":"V normě. HRV, klidový tep i spánek jsou v tvém běžném rozmezí."}</b></div>`;
+  const f=x=>String(x).replace(".",",");
+  ks.forEach(k=>{const m=REG[k],sl=k==="spanek";
+    const lo0=Math.min(m.min,m.od,m.hodnota),hi0=Math.max(m.max,m.do,m.hodnota),pad=(hi0-lo0)*.08,lo=lo0-pad,hi=hi0+pad,P=x=>((x-lo)/(hi-lo)*100).toFixed(1);
+    const val=sl?Math.floor(m.hodnota)+" h "+Math.round((m.hodnota%1)*60)+" min":Math.round(m.hodnota);
+    const mn=Math.min(...m.rada),mx=Math.max(...m.rada),sc=REG.skore_spanku;
+    const extra=sl&&sc?` Skóre spánku ${Math.round(sc.hodnota)} při průměru ${Math.round(sc.prumer)}.`:"";
+    h+=`<div class="rm"><div class="h"><span class="n">${m.label}</span><span><span class="v">${val}</span> <span class="u">${sl?"":m.unit}</span><span class="s ${m.barva}">${m.stav}</span></span></div>
+    <div class="rbar"><div class="rband" style="left:${P(m.od)}%;width:${P(m.do)-P(m.od)}%"></div><div class="ravg" style="left:${P(m.prumer)}%"></div><div class="rdot" style="left:${P(m.hodnota)}%"></div></div>
+    <div class="rlab"><span style="left:${P(m.od)}%">${f(m.od)}</span><span style="left:${P(m.prumer)}%;font-weight:600;color:var(--ink)">Ø ${f(m.prumer)}</span><span style="left:${P(m.do)}%">${f(m.do)}</span></div>
+    <div class="rsp">${m.rada.map((x,i)=>`<i class="${i===m.rada.length-1?"t":""}" style="height:${4+(x-mn)/((mx-mn)||1)*22}px"></i>`).join("")}</div>
+    <div class="rex">Běžné rozmezí za ${m.dnu} dní: ${f(m.od)}–${f(m.do)}${sl?" h":" "+m.unit}, průměr ${f(m.prumer)}.${extra} ${RGEX[k]}</div></div>`;});
+  el.innerHTML=h;}
+function plan(){
+  const tIso=TODAY.getFullYear()+"-"+String(TODAY.getMonth()+1).padStart(2,"0")+"-"+String(TODAY.getDate()).padStart(2,"0");
+  $("plan").innerHTML=PLAN.map(([i,p,t,full,label,isToday,done,iso])=>{const lab={KEY:"KEY run",NICE:"NICE to have",VOLNO:"Volno"}[p],cls={KEY:"b-must",NICE:"b-nice",VOLNO:"b-volno"}[p];
+    const kind=p==="VOLNO"?"none":/^long/i.test(full)?"long":/kvalit/i.test(full)?"q":"easy";
+    let sym,col="var(--accent)";
+    if(p==="VOLNO")sym="·";else if(done){sym="✓";col="var(--good)"}else if(iso<tIso){sym=p==="KEY"?"✗":"–";col=p==="KEY"?"var(--bad)":"var(--muted)"}else if(isToday)sym="●";else sym=p==="KEY"?"◆":"◇";
+    const more=full.length>t.length+2;
+    return `<details class="day ${kind}${isToday?" today":""}"><summary><div><div class="d">${DOW[i]} ${label}</div><div class="sym" style="color:${col}">${sym}</div></div>
+    <div style="min-width:0"><span class="badge ${cls}">${lab}</span>${kind!=="none"?`<span class="tt ${kind}">${KIND[kind]}</span>`:""}<div style="margin-top:4px">${t}</div>${more?'<div class="more">Zobrazit celý popis</div>':""}</div></summary>
+    ${more?`<div class="full">${full}</div>`:""}</details>`}).join("");}
+
+function render(){
+  document.querySelectorAll("#metric .chip").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.m===metric)));
+  weekly();kpis();daily();runs();compare();}
+$("metric").innerHTML=Object.entries(METRICS).map(([k,v])=>`<button class="chip" data-m="${k}" aria-pressed="false">${v.l}</button>`).join("");
+$("metric").addEventListener("click",e=>{const b=e.target.closest(".chip");if(b){metric=b.dataset.m;render();}});
+function fillSelects(){const opts=WEEKS.filter(w=>!w.current).map(w=>`<option value="${w.cw}">CW${w.cw}</option>`).join("");
+$("wa").innerHTML=opts;$("wb").innerHTML=opts;$("wa").value=A;$("wb").value=B;}
+fillSelects();
+$("wa").onchange=e=>{A=+e.target.value;compare()};$("wb").onchange=e=>{B=+e.target.value;compare()};
+$("tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  document.querySelectorAll("#tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));
+  ["tyden","porovnani","forma","plan"].forEach(t=>$("p-"+t).hidden=t!==b.dataset.t);});
+$("fitMode").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;fitMode=b.dataset.f;
+  document.querySelectorAll("#fitMode .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b)));fit();gauges();});
+fit();gauges();regView();plan();render();
+
+const shortT=(t,n=70)=>{t=t.split(/(?<=[.!?])\s/)[0];return t.length<=n?t:t.slice(0,n).replace(/\s\S*$/,"")+"…"};
+const iso2=d=>new Date(d+"T12:00:00"), dm=d=>d.getDate()+"."+(d.getMonth()+1)+".", dowI=d=>(d.getDay()+6)%7;
+async function load(){
+  try{
+    const r=await fetch("data.json",{cache:"no-store"});if(!r.ok)return;const d=await r.json();
+    TODAY=iso2(d.dnes);RACE_D={LHUT:iso2(d.zavody.LHUT),KAT100:iso2(d.zavody.KAT100)};
+    const KMAP={easy:"easy",kvalita:"q",long:"long"};
+    WEEKS=d.tydny.map((w,ix)=>{const od=iso2(w.od);
+      const runs=(w.rucne&&FALLBACK[w.cw])?FALLBACK[w.cw]:w.runs.map(x=>{const dd=iso2(x.datum);return {dow:dowI(dd),date:dm(dd),name:x.name||"běh",pas:x.pas?1:0,km:x.km,min:x.min,hr:x.hr||0,pace:x.pace,load:x.load,kind:KMAP[x.druh]||"easy"}});
+      const o={cw:w.cw,from:dm(od),hours:w.hodin,km:w.km,fit:w.fit,runs:runs,current:ix===d.tydny.length-1};
+      if(w.cw===43&&!(runs&&runs.length)){o.runs=null;} return o});
+    NOW=d.fit_dnes||NOW;
+    const mon=new Date(TODAY);mon.setDate(mon.getDate()-dowI(TODAY));
+    const weekPlan=d.plan.filter(e=>{const x=iso2(e.datum);return x>=mon&&x<=new Date(mon.getTime()+6*864e5+36e5)});
+    PLAN=weekPlan.map(e=>{const x=iso2(e.datum),i=dowI(x);return [i,e.priorita,shortT(e.trening),e.trening,dm(x),e.datum===d.dnes,e.priorita==="VOLNO"?null:(d.splneno[e.datum]||false),e.datum]});
+    TODAY_IDX=dowI(TODAY);
+    enrichA();enrichB();
+    const done=WEEKS.filter(w=>!w.current);sel=(done[done.length-1]||WEEKS[WEEKS.length-1]).cw;
+    A=(done[done.length-2]||done[0]||WEEKS[0]).cw;B=sel;
+    if(d.regenerace)REG=d.regenerace;
+    head();fillSelects();fit();gauges();regView();plan();render();
+    const g=new Date(d.vygenerovano);$("foot").textContent="Data z Intervals.icu, aktualizováno "+g.getDate()+". "+(g.getMonth()+1)+". v "+String(g.getHours()).padStart(2,"0")+":"+String(g.getMinutes()).padStart(2,"0")+".";
+  }catch(e){}
+}
+load();
+</script>
+</body>
+</html>
