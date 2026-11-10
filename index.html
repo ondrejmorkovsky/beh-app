@@ -150,6 +150,27 @@ body.det .wrap>*:not(#detail){display:none!important}
 .pct{font-size:34px;font-weight:600;line-height:1}.pct.ok{color:var(--good)}.pct.mirne{color:var(--warn,#854F0B)}.pct.mimo{color:var(--bad)}
 .dcmp{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}.dcmp td,.dcmp th{padding:4px 0;vertical-align:top}.dcmp th{font-size:11px;font-weight:400;color:var(--muted);text-align:right}.dcmp td.r{text-align:right}.dcmp td.p{color:var(--muted);padding:4px 8px}.dcmp .ok{color:var(--good)}.dcmp .mirne{color:#854F0B}.dcmp .mimo{color:var(--bad)}
 .pb{font-size:11px;color:var(--muted)}.dcmp .hd{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.dcmp .pl{font-size:11px;color:var(--muted);white-space:nowrap;padding:0 0 4px}
+
+.plr{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--bg)}
+.plr h3{margin:0 0 2px;font-size:15px}.plr .sub{font-size:12px;color:var(--muted);margin-bottom:10px}
+.pd{display:grid;grid-template-columns:54px 1fr;gap:8px;align-items:stretch;padding:5px 0;border-top:1px solid var(--line)}
+.pd:first-of-type{border-top:0}
+.pd .dn{font-size:12px;color:var(--muted);padding-top:9px}.pd .dn b{display:block;color:var(--ink);font-size:14px}
+.pd.tdy .dn b{color:var(--accent)}
+.slot{min-height:44px;border:1px dashed var(--line);border-radius:10px;padding:4px;display:flex;flex-direction:column;gap:4px;justify-content:center}
+.slot.tgt{border-color:var(--accent);background:var(--accent-soft);cursor:pointer}
+.slot .emp{font-size:12px;color:var(--muted);padding:0 6px}
+.tile{border-radius:9px;padding:7px 9px;font-size:13px;line-height:1.3;cursor:pointer;border:2px solid transparent;user-select:none;-webkit-user-select:none}
+.tile.KEY{background:var(--good-soft);color:var(--good)}.tile.NICE{background:var(--warn-soft);color:var(--warn)}
+.tile .tp{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;display:block;opacity:.85}
+.tile.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.tile.err{border-color:var(--bad)}.tile.err .tp::after{content:" · porušuje pravidlo";color:var(--bad)}
+.pmsg{margin-top:10px;font-size:13px}.pmsg div{padding:6px 9px;border-radius:8px;margin-top:5px}
+.pmsg .e{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+.pmsg .w{background:var(--warn-soft);color:var(--warn)}.pmsg .o{background:var(--good-soft);color:var(--good)}
+.pact{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;color:var(--muted)}
+.pact button{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 10px}
+.skipz{margin-top:8px}
 </style>
 </head>
 <body>
@@ -214,6 +235,8 @@ body.det .wrap>*:not(#detail){display:none!important}
   <section class="panel" id="p-plan" hidden>
     <h2 style="margin:0">Plán od trenéra, CW46</h2>
     <div class="legend" style="margin:0"><span><i style="background:var(--t-easy)"></i>Easy</span><span><i style="background:var(--t-q)"></i>Kvalita</span><span><i style="background:var(--t-long)"></i>Long</span></div>
+    <div class="plr" id="plr"></div>
+    <h2 style="margin:6px 0 0">Popis tréninků</h2>
     <div class="runs" id="plan"></div>
     <div class="card">
       <h2>Pravidla týdne od Rolanda</h2>
@@ -381,6 +404,7 @@ function regView(){
     <dl class="rd"><dt>Rozmezí</dt><dd>${m.rozmezi_txt}</dd><dt>Jak číst</dt><dd>${m.jak}</dd></dl></div>`;});
   el.innerHTML=h;}
 function plan(){
+  pLoad();planner();
   const tIso=TODAY.getFullYear()+"-"+String(TODAY.getMonth()+1).padStart(2,"0")+"-"+String(TODAY.getDate()).padStart(2,"0");
   $("plan").innerHTML=PLAN.map(([i,p,t,full,label,isToday,done,iso,pc])=>{const lab={KEY:"KEY run",NICE:"NICE to have",VOLNO:"Volno"}[p],cls={KEY:"b-must",NICE:"b-nice",VOLNO:"b-volno"}[p];
     const kind=p==="VOLNO"?"none":/^long/i.test(full)?"long":/kvalit/i.test(full)?"q":"easy";
@@ -391,6 +415,42 @@ function plan(){
     <div style="min-width:0"><span class="badge ${cls}">${lab}</span>${kind!=="none"?`<span class="tt ${kind}">${KIND[kind]}</span>`:""}<div style="margin-top:4px">${t}</div>${more?'<div class="more">Zobrazit celý popis</div>':""}${runOn(iso)?`<span class="lnk" data-iso="${iso}">Detail běhu ›</span>`:""}</div></summary>
     ${more?`<div class="full">${full}</div>`:""}</details>`}).join("");}
 
+
+/* ---- Rozložení týdne: dlaždice + pravidla trenéra ---- */
+let PSEL=null,PPOS={};
+const PKEY=()=>"plr:"+((PLAN[0]&&PLAN[0][7])||"x")+":"+PLAN.length;
+function pKind(full){return /^\s*long/i.test(full)?"long":/kvalit/i.test(full)?"q":"easy";}
+function pTiles(){return PLAN.filter(e=>e[1]!=="VOLNO").map(e=>({id:e[7],home:e[0],prio:e[1],t:e[2],full:e[3],kind:pKind(e[3]),sila:/s[ií]l[auy]/i.test(e[3])}));}
+function pLoad(){PPOS={};try{const o=JSON.parse(localStorage.getItem(PKEY())||"{}");if(o&&typeof o==="object")PPOS=o;}catch(_){}}
+function pSave(){try{localStorage.setItem(PKEY(),JSON.stringify(PPOS));}catch(_){}}
+function pDay(t){const v=PPOS[t.id];return v==null?t.home:v;}   /* 0–6 = den, "x" = tento týden vynechám */
+function pCheck(tiles){const bad=new Set(),msg=[];const on=d=>tiles.filter(t=>pDay(t)===d);
+  for(let d=0;d<7;d++){const a=on(d);
+    if(a.length>1){a.forEach(t=>bad.add(t.id));msg.push(["e",`${DOWF[d]}: dva tréninky v jeden den. Co vypadne, se nedohání.`]);}
+    if(d<6){const h1=a.filter(t=>t.kind!=="easy"),h2=on(d+1).filter(t=>t.kind!=="easy");
+      if(h1.length&&h2.length){h1.concat(h2).forEach(t=>bad.add(t.id));msg.push(["e",`${DOWF[d]} a ${DOWF[d+1]}: kvalita a long nesmí být dva dny po sobě. Dej mezi ně lehký den nebo volno.`]);}
+      const s1=a.filter(t=>t.sila&&t.kind==="easy"),q2=on(d+1).filter(t=>t.kind==="q");
+      if(s1.length&&q2.length){s1.forEach(t=>bad.add(t.id));msg.push(["w",`${DOWF[d]}: trénink se silou je den před kvalitou. Sílu dej k lehkému dni, ne před kvalitu.`]);}}}
+  tiles.filter(t=>pDay(t)==="x"&&t.prio==="KEY").forEach(t=>{bad.add(t.id);msg.push(["e",`Vynecháváš KEY run (${DOWF[t.home]} podle trenéra). KEY runs jsou základ týdne.`]);});
+  return {bad,msg};}
+function planner(){const el=$("plr");if(!el)return;const tiles=pTiles();
+  if(!tiles.length){el.innerHTML='<h3>Rozložení týdne</h3><div class="sub">Plán na tento týden zatím není.</div>';return;}
+  const {bad,msg}=pCheck(tiles);const KL={q:"Kvalita",long:"Long",easy:"Lehký"};
+  const tile=t=>`<div class="tile ${t.prio}${PSEL===t.id?" sel":""}${bad.has(t.id)?" err":""}" data-id="${t.id}"><span class="tp">${t.prio==="KEY"?"KEY":"NICE"} · ${KL[t.kind]}${t.sila?" + síla":""}</span>${t.t}</div>`;
+  const slot=(d,empty)=>{const a=tiles.filter(t=>pDay(t)===d);return `<div class="slot${PSEL?" tgt":""}" data-d="${d}">${a.map(tile).join("")||`<span class="emp">${PSEL?"sem":empty}</span>`}</div>`;};
+  const moved=tiles.some(t=>pDay(t)!==t.home);
+  let h=`<h3>Rozložení týdne</h3><div class="sub">${PSEL?"Teď ťukni na den, kam trénink patří.":"Ťukni na trénink a pak na den. Pravidla trenéra se hlídají sama, rozhodnutí je na tobě."}</div>`;
+  for(let d=0;d<7;d++){const e=PLAN.find(x=>x[0]===d);h+=`<div class="pd${d===TODAY_IDX?" tdy":""}"><div class="dn"><b>${DOW[d]}</b>${e?e[4]:""}</div>${slot(d,"volno")}</div>`;}
+  h+=`<div class="pd skipz"><div class="dn"><b>Mimo</b>vynechám</div>${slot("x","nic")}</div>`;
+  h+=`<div class="pmsg">${msg.length?msg.map(([k,m])=>`<div class="${k}">${m}</div>`).join(""):'<div class="o">Rozložení odpovídá pravidlům trenéra.</div>'}</div>`;
+  h+=`<div class="pact"><span>${moved?"Upraveno, uloženo v tomto telefonu.":"Rozložení podle trenéra."}</span>${moved?'<button id="plrReset">Vrátit podle trenéra</button>':""}</div>`;
+  el.innerHTML=h;}
+$("plr").addEventListener("click",e=>{
+  if(e.target.closest("#plrReset")){PPOS={};PSEL=null;pSave();planner();return;}
+  const t=e.target.closest(".tile"),s=e.target.closest(".slot");
+  if(t&&(!PSEL||PSEL===t.dataset.id)){PSEL=PSEL===t.dataset.id?null:t.dataset.id;planner();return;}
+  if(s&&PSEL){const d=s.dataset.d==="x"?"x":+s.dataset.d;const tl=pTiles().find(x=>x.id===PSEL);
+    if(tl){if(d===tl.home)delete PPOS[tl.id];else PPOS[tl.id]=d;pSave();}PSEL=null;planner();}});
 $("plan").addEventListener("click",e=>{const l=e.target.closest(".lnk");if(l){e.preventDefault();const x=runOn(l.dataset.iso);if(x)openDetail(x);}});
 function render(){
   document.querySelectorAll("#metric .chip").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.m===metric)));
